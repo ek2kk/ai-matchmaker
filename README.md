@@ -30,13 +30,25 @@ cd frontend && pnpm install --frozen-lockfile
 
 ## Local run
 
-Three processes plus an optional extraction worker. Postgres is optional for `/healthz`; outbox relay needs Postgres + ClickHouse. Fact extraction, embeddings, and photo processing use the local fake/filesystem unless `DSLAB_API_KEY`, `OPENROUTER_API_KEY`, Yandex AI Studio, or S3 credentials are set. Photos are auto-approved only when `APP_ENV=local`.
+Postgres can stay up between sessions. Each work session needs three terminals (API, worker, SPA). Relay and ClickHouse are optional.
+
+Fact extraction, embeddings, and photo processing use the local fake/filesystem unless `DSLAB_API_KEY`, `OPENROUTER_API_KEY`, Yandex AI Studio, or S3 credentials are set. Photos are auto-approved only when `APP_ENV=local`.
 
 ```bash
-cd backend && uv run ai-dating          # http://127.0.0.1:8000
-cd frontend && pnpm dev                 # http://localhost:5173
-cd backend && uv run ai-dating-relay    # outbox -> ClickHouse
-cd backend && uv run ai-dating-worker   # extract, embed, generate, photo jobs
+# 1. API — http://127.0.0.1:8000  (needs DATABASE_URL for anything beyond /healthz)
+cd backend && uv run ai-dating
+
+# 2. Worker — extract, embed, generate, photo jobs
+cd backend && uv run ai-dating-worker
+
+# 3. SPA — http://localhost:5173
+cd frontend && pnpm dev
+```
+
+Optional outbox → ClickHouse:
+
+```bash
+cd backend && uv run ai-dating-relay
 ```
 
 ClickHouse (optional, Homebrew cask; no `brew services`):
@@ -51,6 +63,16 @@ cd backend && uv run ai-dating-ch-init
 ```
 
 Open the SPA. `/` calls `GET /healthz`. Register at `/register`, sign in at `/login`. Keep me signed in stores the opaque session in `localStorage`; otherwise it lives in `sessionStorage` until the tab closes. CORS allows `http://localhost:5173` and `http://127.0.0.1:5173` only. There is no Vite proxy. The SPA must not send `event_id`, `occurred_at`, actor, or analytics properties. Local-password auth refuses a non-loopback bind.
+
+## Stop
+
+Ctrl+C in each terminal that is running `ai-dating`, `ai-dating-worker`, `pnpm dev`, or `ai-dating-relay`. Leave Postgres running.
+
+If you started the ClickHouse daemon above:
+
+```bash
+kill "$(cat ~/.local/share/ai-dating-clickhouse/clickhouse.pid)"
+```
 
 ## Checks
 
