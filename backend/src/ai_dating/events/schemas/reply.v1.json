@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reply.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "reply"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "messaging"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "message_id",
+            "reply_to_message_id",
+            "latency_seconds"
+          ],
+          "properties": {
+            "message_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "reply_to_message_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "latency_seconds": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_batch_id": {
+          "type": "null"
+        },
+        "recommendation_item_id": {
+          "type": "null"
+        },
+        "match_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  ]
+}

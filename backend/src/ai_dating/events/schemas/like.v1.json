@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "like.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "like"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "matching"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action_id",
+            "like_id",
+            "is_reciprocal_at_commit"
+          ],
+          "properties": {
+            "action_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "like_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "is_reciprocal_at_commit": {
+              "type": "boolean"
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_batch_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_item_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  ]
+}

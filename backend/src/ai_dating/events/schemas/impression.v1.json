@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "impression.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "impression"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "recommendations"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "surface",
+            "rank",
+            "batch_schema_version"
+          ],
+          "properties": {
+            "surface": {
+              "type": "string",
+              "minLength": 1
+            },
+            "rank": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "batch_schema_version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_batch_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_item_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  ]
+}

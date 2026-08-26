@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "message.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "message"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "messaging"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "message_id",
+            "sequence_kind",
+            "moderation_state"
+          ],
+          "properties": {
+            "message_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "sequence_kind": {
+              "enum": [
+                "first",
+                "followup"
+              ]
+            },
+            "moderation_state": {
+              "const": "allowed"
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_batch_id": {
+          "type": "null"
+        },
+        "recommendation_item_id": {
+          "type": "null"
+        },
+        "match_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  ]
+}

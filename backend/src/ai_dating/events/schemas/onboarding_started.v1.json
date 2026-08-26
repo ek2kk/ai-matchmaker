@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "onboarding_started.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "onboarding_started"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "onboarding"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "flow_version"
+          ],
+          "properties": {
+            "flow_version": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "null"
+        },
+        "recommendation_batch_id": {
+          "type": "null"
+        },
+        "recommendation_item_id": {
+          "type": "null"
+        },
+        "match_id": {
+          "type": "null"
+        },
+        "conversation_id": {
+          "type": "null"
+        },
+        "producer": {
+          "const": "api"
+        }
+      }
+    }
+  ]
+}

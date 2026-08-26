@@ -1,0 +1,56 @@
+[project]
+name = "ai-dating"
+version = "0.1.0"
+description = "AI Dating API"
+authors = [
+    { name = "Egor Kuznetsov", email = "ek2kkk@yandex.ru" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.16",
+    "argon2-cffi>=25.1.0",
+    "boto3>=1.35",
+    "fastapi>=0.116",
+    "pillow>=11.0",
+    "geoalchemy2>=0.20.0",
+    "httpx>=0.28",
+    "jsonschema>=4.25",
+    "psycopg[binary]>=3.2",
+    "pydantic-settings>=2.10",
+    "sqlalchemy>=2.0",
+    "structlog>=25.4",
+    "uvicorn[standard]>=0.35",
+]
+
+[project.scripts]
+ai-dating = "ai_dating:main"
+ai-dating-relay = "ai_dating.relay:main"
+ai-dating-replay = "ai_dating.replay:main"
+ai-dating-ch-init = "ai_dating.ch_init:main"
+ai-dating-worker = "ai_dating.worker:main"
+ai-dating-rerank-eval = "ai_dating.ai.eval:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "pytest>=8.4",
+    "ruff>=0.12",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "postgres: needs DATABASE_DIRECT_URL",
+    "integration: needs local ClickHouse",
+]
+
+[tool.ruff]
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

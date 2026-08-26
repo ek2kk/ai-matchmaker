@@ -1,0 +1,48 @@
+{
+  "decision": "fail",
+  "reason": "human reviewers required; synthetic dry-run is not a promotion",
+  "dataset_hash": "aa65da6012a6e7b430bb26a7bec77236a8af4c75280e492b1b76c4c999983eca",
+  "prompt_version": "rerank-v1",
+  "projection_version": "rerank-proj-v1",
+  "model_version": "yandexgpt-lite/latest",
+  "thresholds": {
+    "valid_result_rate": 0.95,
+    "llm_win_rate": 0.6,
+    "wilson_lower_95": 0.5,
+    "tie_rate": 0.3,
+    "kappa": 0.4,
+    "p95_latency_s": 2.5,
+    "cost_rub_per_call": 0.5,
+    "cost_rub_per_day": 500
+  },
+  "metrics": {
+    "hard_filter_violations": 0,
+    "forbidden_reasons": 0,
+    "valid_result_rate": 1.0,
+    "llm_win_rate": 1.0,
+    "wilson_lower_95": 0.963005192523998,
+    "tie_rate": 0.0,
+    "kappa": 1.0,
+    "p95_latency_s": 0.05,
+    "candidate_cap": 20,
+    "cost_rub_per_call": 0.01,
+    "cost_rub_per_day_est": 1.0
+  },
+  "gates": {
+    "hard_filter_violations": true,
+    "forbidden_reasons": true,
+    "valid_result_rate": true,
+    "llm_wins": true,
+    "ties": true,
+    "kappa": true,
+    "latency": true,
+    "candidate_cap": true,
+    "cost": true
+  },
+  "reviewers": [
+    "synthetic-r1",
+    "synthetic-r2"
+  ],
+  "token_price_formula": "cost_rub = input_tokens/1000 * rerank_input_price_per_1k_rub + output_tokens/1000 * rerank_output_price_per_1k_rub",
+  "quality_gate": "rerank-human-pairwise-v1"
+}

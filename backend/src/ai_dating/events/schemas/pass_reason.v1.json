@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pass_reason.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "pass_reason"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "recommendations"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action_id",
+            "reason_code"
+          ],
+          "properties": {
+            "action_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "reason_code": {
+              "enum": [
+                "not_my_type",
+                "photos",
+                "location",
+                "other"
+              ]
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_batch_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_item_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  ]
+}

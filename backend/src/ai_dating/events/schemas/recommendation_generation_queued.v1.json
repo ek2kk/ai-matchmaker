@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "recommendation_generation_queued.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "recommendation_generation_queued"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "recommendations"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "job_id",
+            "trigger_code",
+            "profile_version",
+            "preferences_version"
+          ],
+          "properties": {
+            "job_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "trigger_code": {
+              "enum": [
+                "onboarding_complete",
+                "profile_updated",
+                "refill"
+              ]
+            },
+            "profile_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "preferences_version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "null"
+        },
+        "subject_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_batch_id": {
+          "type": "null"
+        },
+        "recommendation_item_id": {
+          "type": "null"
+        },
+        "match_id": {
+          "type": "null"
+        },
+        "conversation_id": {
+          "type": "null"
+        }
+      }
+    }
+  ]
+}

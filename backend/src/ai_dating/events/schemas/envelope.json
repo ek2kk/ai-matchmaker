@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "envelope.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_name",
+    "schema_version",
+    "occurred_at",
+    "producer",
+    "owner",
+    "actor_account_id",
+    "subject_account_id",
+    "recommendation_batch_id",
+    "recommendation_item_id",
+    "match_id",
+    "conversation_id",
+    "request_id",
+    "experiment_assignments",
+    "privacy_classification",
+    "properties"
+  ],
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_name": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "producer": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string", "minLength": 1 },
+    "actor_account_id": { "type": ["string", "null"], "format": "uuid" },
+    "subject_account_id": { "type": ["string", "null"], "format": "uuid" },
+    "recommendation_batch_id": { "type": ["string", "null"], "format": "uuid" },
+    "recommendation_item_id": { "type": ["string", "null"], "format": "uuid" },
+    "match_id": { "type": ["string", "null"], "format": "uuid" },
+    "conversation_id": { "type": ["string", "null"], "format": "uuid" },
+    "request_id": { "type": "string", "minLength": 1 },
+    "experiment_assignments": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "privacy_classification": {
+      "enum": ["product_pseudonymous", "security_restricted"]
+    },
+    "properties": { "type": "object" }
+  }
+}

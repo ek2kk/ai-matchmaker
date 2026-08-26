@@ -1,0 +1,157 @@
+{
+  "eslint.config.js": {
+    "mtime": 1787738455.85035,
+    "ast_hash": "0e42caedd251fa6ba20714a3d23aecc2",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1787738203.1533337,
+    "ast_hash": "04548d78af8f3bae4f5ce6f4fd4e8791",
+    "semantic_hash": ""
+  },
+  "src/App.tsx": {
+    "mtime": 1787743432.2082634,
+    "ast_hash": "0a35d550573a6118a9a97c1041b35be8",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/CalibrationStep.tsx": {
+    "mtime": 1787746698.5649757,
+    "ast_hash": "70722c3ebab87370f0b753bf3ede6db6",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/DiscoverabilityStep.tsx": {
+    "mtime": 1787751500.0281086,
+    "ast_hash": "af3b4f9c98ba6ee72f9266105674ca20",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/EligibilityStep.tsx": {
+    "mtime": 1787743398.3388605,
+    "ast_hash": "fa7069edec95b90e7fce49a92ab94907",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/FactsReviewStep.tsx": {
+    "mtime": 1787751500.0277297,
+    "ast_hash": "b2e64210375ea36425127fd56a38206c",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/FormErrorSummary.tsx": {
+    "mtime": 1787743380.7095747,
+    "ast_hash": "f7dc48370c7726459a9572eab1e3735a",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/PartnerPreferencesStep.tsx": {
+    "mtime": 1787751481.602154,
+    "ast_hash": "914aefc322ea8197f447138bbb57bb98",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/PromptStep.tsx": {
+    "mtime": 1787751499.7345357,
+    "ast_hash": "701a35c1282ada75476e2f117e896031",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/SelfProfileStep.tsx": {
+    "mtime": 1787751472.8862708,
+    "ast_hash": "b6afb186f5e72050d4b38caf84489ffa",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/StepNav.tsx": {
+    "mtime": 1787743388.2099202,
+    "ast_hash": "fb950e393440897a3bdad8c5150db36e",
+    "semantic_hash": ""
+  },
+  "src/components/onboarding/VersionConflictDialog.tsx": {
+    "mtime": 1787743382.1975365,
+    "ast_hash": "3e812ab7d1faad7049d8d18cc0505b87",
+    "semantic_hash": ""
+  },
+  "src/lib/api.ts": {
+    "mtime": 1787751463.0395668,
+    "ast_hash": "34c6bf58ab38a6a9498d16c72b49fdd5",
+    "semantic_hash": ""
+  },
+  "src/lib/env.ts": {
+    "mtime": 1787738144.9423976,
+    "ast_hash": "d8cbd60c07e8d841ec480cf2e40a9575",
+    "semantic_hash": ""
+  },
+  "src/lib/http.ts": {
+    "mtime": 1787743371.8250597,
+    "ast_hash": "6b64fd03abbc1193176033ee7556e3ed",
+    "semantic_hash": ""
+  },
+  "src/lib/onboarding.ts": {
+    "mtime": 1787746698.5649981,
+    "ast_hash": "3ae4444fc88fc4837c9da3c7b71e82d1",
+    "semantic_hash": ""
+  },
+  "src/lib/session.ts": {
+    "mtime": 1787741545.0022666,
+    "ast_hash": "a4c647909c2bbea02d08fe6b574b6bb6",
+    "semantic_hash": ""
+  },
+  "src/main.tsx": {
+    "mtime": 1787738151.8602283,
+    "ast_hash": "9022e572222699488a96fc345861d2b8",
+    "semantic_hash": ""
+  },
+  "src/pages/LoginPage.tsx": {
+    "mtime": 1787743432.5447147,
+    "ast_hash": "bc5f32d21b3851740d9d126157e166ca",
+    "semantic_hash": ""
+  },
+  "src/pages/OnboardingPage.tsx": {
+    "mtime": 1787745336.0758972,
+    "ast_hash": "9aa427bdc526d3c0da729dc9214a63db",
+    "semantic_hash": ""
+  },
+  "src/pages/OnboardingPendingPage.tsx": {
+    "mtime": 1787744007.1010306,
+    "ast_hash": "b4476634fda67dd7fe079114e73fdb2f",
+    "semantic_hash": ""
+  },
+  "src/pages/PrivacyPage.tsx": {
+    "mtime": 1787743433.5891654,
+    "ast_hash": "d7e0ddafcf0fa9f628641280d06ad8f8",
+    "semantic_hash": ""
+  },
+  "src/pages/RegisterPage.tsx": {
+    "mtime": 1787747818.4181798,
+    "ast_hash": "116b562e85b3cbe52cf3a9243165bb04",
+    "semantic_hash": ""
+  },
+  "src/pages/StatusPage.tsx": {
+    "mtime": 1787741582.104777,
+    "ast_hash": "d16aad963f5edc7ff04cd0b7fac7509f",
+    "semantic_hash": ""
+  },
+  "src/vite-env.d.ts": {
+    "mtime": 1787738141.0979517,
+    "ast_hash": "7aa045e766147ff245b27120a895b5ac",
+    "semantic_hash": ""
+  },
+  "tsconfig.json": {
+    "mtime": 1787738138.7837117,
+    "ast_hash": "d5b05e12e043e849f4683293171e5e2b",
+    "semantic_hash": ""
+  },
+  "vite.config.ts": {
+    "mtime": 1787738137.0416324,
+    "ast_hash": "e32133ed6af3b91247776dd9ee3957a2",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1787740804.1418238,
+    "ast_hash": "8ff47b7b8005fc0ddac0deb78d8d7f2e",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1787738140.3062186,
+    "ast_hash": "80be81e20c28b13b375c997dad160b99",
+    "semantic_hash": ""
+  },
+  "pnpm-workspace.yaml": {
+    "mtime": 1787738413.587437,
+    "ast_hash": "31c19d3bbfe82e132e4953d011e7ba0b",
+    "semantic_hash": ""
+  }
+}

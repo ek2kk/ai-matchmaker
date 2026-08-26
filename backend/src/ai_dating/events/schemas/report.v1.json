@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "report.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "report"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "safety"
+        },
+        "privacy_classification": {
+          "const": "security_restricted"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "report_id",
+            "reason_code",
+            "target_type"
+          ],
+          "properties": {
+            "report_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "reason_code": {
+              "enum": [
+                "harassment",
+                "spam",
+                "fake_profile",
+                "underage",
+                "other"
+              ]
+            },
+            "target_type": {
+              "enum": [
+                "account",
+                "message"
+              ]
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  ]
+}

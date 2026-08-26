@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "calibration_completed.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "calibration_completed"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "onboarding"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "calibration_version",
+            "items_seen",
+            "skipped",
+            "synthetic_only"
+          ],
+          "properties": {
+            "calibration_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "items_seen": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skipped": {
+              "type": "boolean"
+            },
+            "synthetic_only": {
+              "type": "boolean"
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "null"
+        },
+        "recommendation_batch_id": {
+          "type": "null"
+        },
+        "recommendation_item_id": {
+          "type": "null"
+        },
+        "match_id": {
+          "type": "null"
+        },
+        "conversation_id": {
+          "type": "null"
+        },
+        "producer": {
+          "const": "api"
+        }
+      }
+    }
+  ]
+}

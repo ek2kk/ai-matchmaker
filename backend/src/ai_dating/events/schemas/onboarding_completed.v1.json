@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "onboarding_completed.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "onboarding_completed"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "onboarding"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "flow_version",
+            "profile_version",
+            "preferences_version",
+            "duration_seconds"
+          ],
+          "properties": {
+            "flow_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "profile_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "preferences_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "duration_seconds": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_account_id": {
+          "type": "null"
+        },
+        "recommendation_batch_id": {
+          "type": "null"
+        },
+        "recommendation_item_id": {
+          "type": "null"
+        },
+        "match_id": {
+          "type": "null"
+        },
+        "conversation_id": {
+          "type": "null"
+        },
+        "producer": {
+          "const": "api"
+        }
+      }
+    }
+  ]
+}

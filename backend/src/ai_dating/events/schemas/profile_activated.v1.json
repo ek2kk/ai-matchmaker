@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "profile_activated.v1.json",
+  "allOf": [
+    {
+      "$ref": "envelope.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "profile_activated"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "owner": {
+          "const": "profiles"
+        },
+        "privacy_classification": {
+          "const": "product_pseudonymous"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "profile_version",
+            "activation_latency_seconds"
+          ],
+          "properties": {
+            "profile_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "activation_latency_seconds": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "actor_account_id": {
+          "type": "null"
+        },
+        "subject_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendation_batch_id": {
+          "type": "null"
+        },
+        "recommendation_item_id": {
+          "type": "null"
+        },
+        "match_id": {
+          "type": "null"
+        },
+        "conversation_id": {
+          "type": "null"
+        },
+        "producer": {
+          "enum": ["api", "worker"]
+        }
+      }
+    }
+  ]
+}
