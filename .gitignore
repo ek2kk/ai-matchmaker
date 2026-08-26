@@ -12,6 +12,9 @@ wheels/
 # Secrets and local env (keep .env.example / Vite mode files)
 .env
 
+# Graphify generated graphs
+graphify-out/
+
 # Frontend
 node_modules/
 frontend/dist/
