@@ -53,3 +53,17 @@ CI is `TBD-INF03`; no workflow files exist.
 - Schema changes include reviewed migration and data/backfill/rollback or forward-fix notes.
 - Privacy/safety paths include cross-account, block and stale-state checks; logs/telemetry contain no sensitive payload.
 - Actual test/type/lint/migration commands pass and are documented once those tools exist. Unknown infrastructure remains `Assumption`/`TBD`, never asserted as fact.
+
+## Agent skills
+
+### Issue tracker
+
+Рабочие задачи ведутся в корневом `todos.md`; GitHub/GitLab Issues не используются. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Используются стандартные роли triage, записываемые в задаче из `todos.md`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout: `CONTEXT.md` и `docs/adr/` создаются по мере необходимости. See `docs/agents/domain.md`.
