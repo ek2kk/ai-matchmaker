@@ -72,7 +72,7 @@ HNSW recall is evaluated against exact cosine on sampled eligible pools. Embeddi
 
 System prompt says: choose only supplied IDs; prioritize mutual compatibility and conversation potential; never infer sensitive facts; return typed JSON. Temperature/config is fixed in `model_version`. Provider deadline is 3 seconds and candidates/tokens are bounded. Unknown/duplicate IDs, reasons referencing forbidden fields, or invalid JSON discard the entire model result and use heuristic order.
 
-Generated reasons use allowlisted evidence references, for example `shared_goal`, `prompt_theme`, `distance_band`, never exact scores or private facts. A deterministic policy renderer is preferred; LLM prose is accepted only after content/sensitive-trait checks.
+Generated reasons use only allowlisted public evidence references, for example `shared_goal` and `prompt_theme`, never exact scores, private facts, inferred traits, location or distance-derived claims. LLM prose is accepted only after a validator confirms its evidence and content policy; a rejected or unavailable reason is omitted rather than replaced with unsafe text.
 
 ## 6. Versioning and observability
 
@@ -91,7 +91,7 @@ Each AI observation records, with restricted access:
 | Latency, token counts, estimated cost, result status | Budgets and incidents |
 | Safety validation result | Audit fallback/rejection |
 
-Do not store raw payloads by default. Restricted sampled payload retention for evaluation requires consent/purpose, access log and expiry.
+Runtime does not store raw payloads. Restricted sampled payload retention for evaluation requires separate consent/purpose, access log and expiry.
 
 ## 7. Evaluation and launch gates
 
@@ -109,7 +109,7 @@ The rerank quality gate is `rerank-human-pairwise-v1` (separate from `TBD-ML01`)
 
 ### Moderation
 
-Measure false negative/positive samples by policy category, appeal overturn rate and time-to-human-review for severe reports. Automated reject is limited to high-confidence policy cases; ambiguous material is held from public view.
+Measure false negative/positive samples by policy category, appeal overturn rate and time-to-human-review for severe reports. Automated reject is limited to high-confidence policy cases; ambiguous material is held from public view. Approved content may be re-held after a credible report; model decisions are never the final appeal decision.
 
 ## 8. Human review and recovery
 

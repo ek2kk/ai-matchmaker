@@ -84,7 +84,7 @@ The user-controlled completion transaction sets `onboarding_completed_at` and tr
 
 ### `profiles`
 
-Назначение: dating profile и visibility. `location` is restricted; `public_area_code` is the only location sent to eligible users.
+Назначение: dating profile и visibility. `area_code` is restricted beta data and is not sent to candidates. `location` exists only for a separately approved future distance policy.
 
 | Field | Type | Null/default | Constraints / indexes |
 |---|---|---|---|
@@ -93,12 +93,12 @@ The user-controlled completion transaction sets `onboarding_completed_at` and tr
 | `display_name` | `text` | not null | length 1..80 |
 | `bio` | `text` | null | length ≤2000 |
 | `gender_code`, `orientation_code` | `text` | not null | controlled vocabulary; sensitive |
-| `search_mode` | `text` | not null | check `dating, friendship` |
-| `relationship_goal_code` | `text` | null | required when `search_mode=dating`; null when `friendship` |
+| `search_mode` | `text` | not null | check `dating, friendship`; beta policy permits `dating` only |
+| `relationship_goal_code` | `text` | null | required when `search_mode=dating`; null when `friendship` in prototype only |
 | `relationship_status` | `text` | `single` | MVP check `single` |
 | `city_code` | `text` | `moscow` | MVP city hard filter |
-| `location` | `geography(Point,4326)` | not null | GiST index; restricted PII; server-filled Moscow centroid when the client omits coordinates |
-| `public_area_code` | `text` | not null | btree index; default `moscow_central`; not required in onboarding UI |
+| `location` | `geography(Point,4326)` | null | future exact-distance policy only; beta does not collect or synthesize a point |
+| `area_code` | `text` | not null | restricted coarse Moscow area selected in onboarding; never serialized to another user in beta |
 | `visibility` | `text` | `hidden` | check `hidden, eligible, paused` |
 | `moderation_state` | `text` | `pending` | check `pending, approved, rejected, suspended` |
 | `activated_at` | `timestamptz` | null | set when all server-controlled visibility/generation gates first pass |
@@ -106,7 +106,7 @@ The user-controlled completion transaction sets `onboarding_completed_at` and tr
 | `version` | `integer` | 1 | positive; increment on rank-relevant change |
 | `created_at`, `updated_at`, `deleted_at` | `timestamptz` | now/now/null | index `(visibility, moderation_state, updated_at)` |
 
-Queries: reciprocal candidate filtering; profile owner edit; public projection after authorization. **Assumption:** PostGIS is available. Without it, beta must restrict eligibility by exact `public_area_code`; silent approximate distance is forbidden.
+Queries: reciprocal candidate filtering; profile owner edit; public projection after authorization. Beta uses Moscow city equality and does not expose or filter by distance. A later exact-distance policy requires an explicit location/retention review; silent centroid or approximate distance is forbidden.
 
 Every change to candidate-facing fields, answer/photo membership/order/moderation or approved derivative increments `profiles.version`. This makes the public projection version a delivery guard, not only a ranking hint.
 
@@ -153,10 +153,10 @@ Queries: edit answer; build profile/embedding projection according to visibility
 | `account_id` | `uuid` | not null | PK/FK `accounts` cascade |
 | `search_mode` | `text` | not null | same as self; reciprocal eligibility requires equal modes |
 | `accepted_gender_codes` | `text[]` | not null | non-empty; API name kept (spec: `preferred_gender_codes`) |
-| `age_min`, `age_max` | `smallint` | not null | check `18 <= age_min <= age_max <= 120` |
-| `max_distance_km` | `smallint` | not null | check 1..500 |
+| `age_min`, `age_max` | `smallint` | not null | schema supports 18..120; beta policy validates both values inside 21..35 |
+| `max_distance_km` | `smallint` | null | future distance policy; null and unused in beta |
 | `city_codes` | `text[]` | not null | non-empty; MVP `moscow` |
-| `relationship_goal_codes` | `text[]` | not null | non-empty when `search_mode=dating`; may be empty for `friendship` (spec: `accepted_relationship_goals`) |
+| `relationship_goal_codes` | `text[]` | not null | non-empty for beta `dating`; `friendship` semantics are prototype-only |
 | `dealbreakers` | `jsonb` | `{}` | allowed-key/schema validation in API; no arbitrary SQL interpretation |
 | `version` | `integer` | 1 | positive, increment on change |
 | `created_at`, `updated_at` | `timestamptz` | now | index `updated_at` for invalidation |
@@ -215,7 +215,7 @@ Canonical funnel state without raw answers: `account_id uuid FK`, `flow_version 
 
 ### `calibration_sessions`
 
-`calibration_session_id uuid PK`, `account_id uuid FK`, `calibration_version text`, `state text CHECK(started,completed,skipped)`, `synthetic_only boolean default true`, `signal_snapshot jsonb default '{}'`, `started_at`, `completed_at`; unique `(account_id,calibration_version)`. MVP `calibration_version` is `v1` with five text-only synthetic pairs. `signal_snapshot` is derived, contains only versioned soft-feature weights and is deleted when calibration consent/data is cleared.
+`calibration_session_id uuid PK`, `account_id uuid FK`, `calibration_version text`, `state text CHECK(started,completed,skipped)`, `synthetic_only boolean default true`, `signal_snapshot jsonb default '{}'`, `started_at`, `completed_at`; unique `(account_id,calibration_version)`. Prototype `calibration_version` is `v1` with five text-only synthetic pairs. `signal_snapshot` is derived, contains only versioned soft-feature weights and is deleted when calibration consent/data is cleared; it is not a beta activation dependency.
 
 ### `calibration_choices`
 
@@ -261,6 +261,7 @@ Append-only: `audit_id uuid PK`, `action text`, `actor_type text`, `actor_id uui
 | `input_snapshot` | `jsonb` | not null | versions/IDs, not unrestricted PII |
 | `eligibility_version`, `ranker_version`, `prompt_version`, `model_version` | `text` | not null/null | `prompt/model` nullable when no LLM |
 | `fallback_mode` | `text` | `none` | check `none,no_llm,no_embedding,insufficient_supply` |
+| `batch_kind` | `text` | `normal` | check `normal,exploratory`; exploratory is user-requested only and still fully eligible |
 | `candidate_count`, `item_count` | `integer` | 0 | non-negative; item_count ≤5 |
 | `created_at`, `ready_at`, `expires_at` | `timestamptz` | now/null/not null | index `(owner_account_id,status,expires_at desc)` |
 
@@ -288,7 +289,7 @@ Durable open/decision state: `action_id uuid PK`, `recommendation_item_id uuid F
 
 - `conversations`: `conversation_id uuid PK`, `match_id uuid UNIQUE FK`, `state text CHECK(active,closed)`, `created_at`, `closed_at`.
 - `conversation_members`: composite PK `(conversation_id,account_id)`, FKs, `joined_at`, `last_read_message_id uuid null`. Exactly the two match participants; application transaction maintains this invariant.
-- `messages`: `message_id uuid PK`, `conversation_id` FK, `sender_account_id` FK, `client_message_id uuid`, `body text CHECK(length 1..4000)`, `moderation_state text default held CHECK(allowed,held,rejected)`, `created_at`, `allowed_at`, `deleted_at`; unique `(sender_account_id,client_message_id)`, partial index `(conversation_id,allowed_at,message_id) WHERE moderation_state = 'allowed'` for cursor pagination. Conversation history contains only `allowed` messages ordered by `allowed_at,message_id`; sender may query the status of its own held/rejected message by ID.
+- `messages`: `message_id uuid PK`, `conversation_id` FK, `sender_account_id` FK, `client_message_id uuid`, `body text CHECK(length 1..4000)`, `moderation_state text default allowed CHECK(allowed,held,rejected,removed)`, `created_at`, `allowed_at`, `deleted_at`; unique `(sender_account_id,client_message_id)`, partial index `(conversation_id,allowed_at,message_id) WHERE moderation_state = 'allowed'` for cursor pagination. Messages are delivered after synchronous policy/rate checks and then post-moderated; `held` is reserved for uncertain/high-risk review, while `rejected`/`removed` are hidden from recipients. Conversation history contains only `allowed` messages ordered by `allowed_at,message_id`.
 
 ### `experiment_assignments`
 

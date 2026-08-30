@@ -1,15 +1,15 @@
 # AI Dating MVP: architecture overview
 
-> **Status:** Proposed for review  
-> **Owner:** TBD: engineering owner  
+> **Status:** Local prototype implemented; closed-beta target under preparation
+> **Owner:** founder (prototype); beta ownership to be confirmed
 > **Updated:** 2026-08-25  
-> **Scope:** целевая архитектура нового MVP; код и production infrastructure ещё не существуют.
+> **Scope:** implemented local prototype and target architecture for a future closed beta; production infrastructure is not deployed.
 
 ## 1. Abstract
 
-Репозиторий содержит только Python package stub и рабочие соглашения. Target stack зафиксирован как FastAPI, React/Vite и Yandex Cloud, но зависимости, frontend bootstrap, migrations, CI и deployment config отсутствуют. Поэтому этот набор документов описывает **proposed target**, а не текущую работающую систему.
+Репозиторий содержит работающий local FastAPI/React prototype, Alembic migrations, DB-backed worker и outbox relay. Target stack зафиксирован как FastAPI, React/Vite и Yandex Cloud; CI и cloud deployment config ещё отсутствуют. Эти документы описывают текущие verified local contracts и proposed closed-beta target, а не доказательство развернутой production infrastructure.
 
-Рекомендуемый старт: modular monolith с одним FastAPI codebase, React SPA, Yandex Managed PostgreSQL как transactional source of truth, Object Storage для photos, DB-backed worker для recommendation и moderation jobs, Yandex AI Studio для extraction/bounded reranking и GigaChat `EmbeddingsGigaR` для retrieval. Local prototype использует application-owned `login + password` и revocable DB sessions; phone passwordless auth остаётся closed-beta work. Полный local contract находится в [authentication design](../authentication/design.md). Product events надёжно выходят через transactional outbox прямо в ClickHouse; Kafka добавляется только при измеримом fan-out или throughput.
+Рекомендуемый beta target: modular monolith с одним FastAPI codebase, React SPA, Yandex Managed PostgreSQL как transactional source of truth, Object Storage для photos, DB-backed worker для recommendation и moderation jobs, Yandex AI Studio для extraction/bounded reranking и GigaChat `EmbeddingsGigaR` для retrieval. Local prototype использует application-owned `login + password` и revocable DB sessions; beta требует отдельный SMS OTP flow. Product events надёжно выходят через transactional outbox прямо в ClickHouse; Kafka добавляется только при измеримом fan-out или throughput.
 
 ## 2. Goals and non-goals
 
@@ -45,7 +45,7 @@
 flowchart LR
     U[Adult user] --> SPA[React SPA]
     OPS[Trust and Safety operator] --> OPSUI[Restricted admin UI]
-    SPA -->|local login + password| API[FastAPI modular monolith]
+    SPA -->|prototype local password / beta SMS OTP| API[FastAPI modular monolith]
     OPSUI -->|staff identity| API
     API -->|authoritative writes| PG[(Yandex Managed PostgreSQL)]
     API -->|signed upload URLs| OBJ[(Object storage)]
@@ -72,7 +72,7 @@ sequenceDiagram
     participant W as Worker
     participant M as Yandex AI Studio
 
-    C->>A: local login/password
+    C->>A: prototype local login/password or beta SMS OTP
     A->>D: create identity, account and revocable session
     C->>A: PATCH /v1/onboarding/profile
     A->>D: transaction: profile + outbox
@@ -172,7 +172,7 @@ sequenceDiagram
 - **Decision:** founder owns product, platform, CI/CD, Trust & Safety and incident response for prototype.
 - **Decision:** target segment, taxonomy and location semantics are fixed in [client brief](../client-brief.md).
 - **Decision:** GigaChat `EmbeddingsGigaR` provides `vector(2560)` retrieval embeddings; Yandex AI Studio remains the generation provider.
-- **Closed-beta gate:** jurisdiction-specific retention, employee access/encryption posture, safety SLA/backup owner, RPO/RTO, production phone/Yandex auth, model/auth budgets remain unresolved. They do not block local prototype work.
+- **Closed-beta gate:** jurisdiction-specific retention, employee access/encryption posture, safety SLA/backup owner, production SMS OTP/provider, model/auth budgets and restore proof remain unresolved. They do not block local prototype work.
 
 ## 12. Decision and next step
 

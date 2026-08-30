@@ -4,7 +4,7 @@
 
 ## 1. Principles
 
-- Adults 21+ only: account cannot become discoverable until age gate passes.
+- Prototype is 21+ only; closed beta additionally restricts discoverability and preferences to ages 21–35.
 - Purpose limitation: collect/use data only for an explicit product or safety purpose.
 - Data minimization: exact location, DOB, raw text/media and identifiers stay out of analytics/model calls unless required.
 - User control: separate consents, fact visibility, discoverability, export and deletion.
@@ -22,7 +22,7 @@ Facts default `private`; `matching_only` permits minimized rank/model projection
 ## 3. Location, age and sensitive attributes
 
 - Store DOB restricted; return computed age only. Never return DOB to another user.
-- Request coarse chosen location, not background/continuous GPS. `location` is used server-side for distance; candidate sees `public_area_code` and optional distance band, never coordinates.
+- Beta requests a coarse chosen Moscow area, not background/continuous GPS. It is restricted server-side data and is not shown to candidates; beta uses city equality rather than a distance filter. A later distance policy requires separate approval.
 - Gender identity/orientation/preferences are sensitive. Compatibility uses explicit accepted-gender intent in both directions, not model inference.
 - **TBD-SEC01:** launch jurisdiction determines age assurance, parental/minor handling, retention, export/deletion SLA and special-category data basis.
 - **Decision P02:** MVP uses user-declared DOB and coarse Moscow location without continuous GPS; stronger age/location assurance remains a closed-beta risk review.
@@ -56,7 +56,7 @@ Visibility states:
 
 `report` always includes block behavior, accepts allowlisted reason + optional details/evidence, opens/links a moderation case and returns a generic success. The reported person is not told reporter identity or details.
 
-Photo/text lifecycle is `pending → approved|rejected`; content is private while pending. Automated high-confidence rejection is appealable; ambiguous/severe cases are held for human review. Existing approved content can be re-held when a credible report or policy change requires it.
+Photo lifecycle is `pending → approved|rejected`; content is private while pending. Automated high-confidence rejection is appealable; ambiguous/severe cases are held for human review. Text is delivered after synchronous policy/rate checks and post-moderated; high-confidence violations can be removed and the account hidden, while ambiguous reports go to human review. Existing approved content can be re-held when a credible report or policy change requires it.
 
 ## 6. Abuse controls
 
@@ -69,7 +69,7 @@ Initial limits are configuration values with security owner approval:
 | Photo uploads | 10/day/account, 10 MB each | Reject before signed upload/processing |
 | Batch generation | 2 successful/day/account | Serve current batch or cooldown |
 | Likes/passes | Bounded by exposed items | Reject IDs not owned/exposed |
-| Messages | 20/minute and 200/day/account (**Assumption**) | Temporary throttle; severe spam escalation |
+| Messages | 20/minute and 200/day/account; ≤3 before the other participant's first reply | Temporary throttle; severe spam escalation |
 | Reports | 20/day/account; never block genuine severe report path | Queue abuse review, preserve block |
 
 Object upload validates MIME by content, size, dimensions and object key ownership; strips metadata and creates safe derivatives. Signed URLs are short-lived. Virus/malware scan requirement for image-only MVP is `TBD-SEC03`; format decode/re-encode and content moderation are mandatory.

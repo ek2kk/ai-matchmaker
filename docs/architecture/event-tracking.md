@@ -41,8 +41,8 @@ All product events are produced server-side after the corresponding authoritativ
 | `pass` | recommendations / API | Pass action committed for exposed item | `action_id` | batch + item required | product pseudonymous; unique item/actor/action row |
 | `pass_reason` | recommendations / API | Optional allowlisted reason committed with the pass action | `action_id`, `reason_code` | batch + item required | product pseudonymous; no free text |
 | `match` | matching / API | Second active reciprocal like creates unique match | `source=reciprocal_like` | completing like's batch/item, `match_id` and `conversation_id` required in MVP | product pseudonymous; same transaction as match |
-| `message` | messaging / API or worker | Message first transitions to `allowed` | `message_id`, `sequence_kind=first_or_followup`, `moderation_state=allowed` | rec refs null; match + conversation required | no body; event may follow async moderation |
-| `reply` | messaging / API or worker | Newly allowed message follows latest allowed message by other member within 7 days | `message_id`, `reply_to_message_id`, `latency_seconds` | match + conversation required | no body; emitted with the same allow transition |
+| `message` | messaging / API | Message passes synchronous policy/rate checks and is delivered | `message_id`, `sequence_kind=first_or_followup`, `moderation_state=allowed` | rec refs null; match + conversation required | no body; post-moderation can later remove content |
+| `reply` | messaging / API | Newly delivered message follows latest allowed message by other member within 7 days | `message_id`, `reply_to_message_id`, `latency_seconds` | match + conversation required | no body; emitted with message creation |
 | `unmatch` | matching / API | Active match transitions to unmatched | `initiator_role=self`, `match_age_seconds` | `match_id` required | product pseudonymous; reason omitted unless allowlisted |
 | `block` | safety / API | Block + relationship invalidation committed | `reason_code` allowlisted, `had_active_match` | match nullable | product projection + restricted audit; immediate enforcement from PG |
 | `report` | safety / API | Report + automatic block committed | `report_id`, `reason_code`, `target_type` | match nullable | minimized product projection + restricted audit |
@@ -55,13 +55,15 @@ These are canonical product events under the same envelope/schema/delivery rules
 
 | Event | Owner / producer | Moment | Required properties | Identity / idempotency |
 |---|---|---|---|---|
-| `onboarding_started` | auth / API | `POST /v1/auth/local/register` first creates application account | `flow_version` | actor only; once per account/flow version |
+| `onboarding_started` | auth / API | First local registration or verified beta SMS OTP creates application account | `flow_version`, `auth_mode` | actor only; once per account/flow version |
 | `onboarding_step_completed` | onboarding / API | A named user-controlled step first satisfies its server validation | `flow_version`, allowlisted `step_code`, `profile_version`, `preferences_version` | actor only; once per account/flow/step; later edits do not fake another completion |
 | `fact_reviewed` | profiles / API | Accept/edit/reject decision and fact version commit | `fact_id`, `fact_category`, `decision`, `source_type`, `extractor_version` nullable | actor only; one event per committed fact review version. Event `source_type` is `extracted` when the reviewed row is `free_text`, otherwise `user_entered`. `extractor_version` is the prompt version for extracted rows |
 | `calibration_completed` | onboarding / API | Synthetic calibration completes or is explicitly skipped | `calibration_version`, `items_seen`, `skipped`, `synthetic_only` | actor only; stable completion action ID. Idempotent retry of the same complete/skip does not enqueue a second event |
 | `onboarding_completed` | onboarding / API | All user-controlled gates commit, independent of pending async moderation | `flow_version`, `profile_version`, `preferences_version`, `duration_seconds` | actor only; once for initial flow, idempotent retry returns existing state |
 | `profile_activated` | profiles / worker | Server-controlled photo/profile moderation and visibility gates first pass | `profile_version`, `activation_latency_seconds` | actor is null, subject is account; once per activation epoch (MVP has one initial epoch) |
 | `recommendation_generation_queued` | recommendations / API or worker | Deduplicated generation job commits | `job_id`, `trigger_code`, `profile_version`, `preferences_version` | subject is target account; one event per unique job `dedup_key` |
+| `recommendation_batch_ready` | recommendations / worker | Ready batch is committed | `batch_kind`, `item_count`, `fallback_mode` | subject is batch owner; no candidate IDs or reason text |
+| `fact_extraction_ready` | profiles / worker | Deferred extraction writes review-only suggestions | `answer_version`, `suggestion_count` | subject is owner; no fact values or source text |
 
 `step_code`, `fact_category`, `decision` and `trigger_code` are versioned allowlists in the per-event JSON Schema. All seven events use `privacy_classification = product_pseudonymous`; consent/age decisions separately create restricted security audit receipts. `onboarding_completed` is the funnel boundary; `profile_activated` starts the recommendation readiness latency clock.
 
@@ -215,8 +217,8 @@ No cross-event delivery ordering is guaranteed, including for one account; consu
 | Like rate | likes | impressions | Diagnostic only; not primary objective |
 | Pass/reason | passes by code | impressions/passes | No free text in analytics |
 | Match rate | unique matches | actors with impressions and eligible opportunity | Correct for reciprocal exposure lag |
-| First message | matches with first message in 24 h | matches | Spam/held messages excluded |
-| Reply | matches with reply in 48 h | matches with first allowed message | Stronger quality proxy |
+| First message | matches with first delivered message in 24 h | matches | Removed/rejected messages excluded |
+| Reply | matches with reply in 48 h | matches with first delivered message | Stronger quality proxy |
 | Conversation quality | 4+ alternating allowed messages in 7d | replied matches | Monitor unmatch/block/report |
 | Safety | block/report per 100 impressions and matches | exposure/match cohorts | Zero tolerance for eligibility leaks |
 | Retention | activated user returns in W1/W4 and has meaningful action | activated cohort | Supply-aware segmentation |

@@ -1,7 +1,7 @@
 # API contracts
 
 > **Style:** JSON over HTTPS under `/v1`; opaque application session; server derives actor and service fields.  
-> **Status:** proposed contracts, no implementation exists.
+> **Status:** local prototype contracts are implemented; beta-only contracts below remain planned until their listed gates are closed.
 
 ## 1. Common rules
 
@@ -36,27 +36,27 @@ Detailed invariants are defined in [authentication design](../authentication/des
 | `POST /v1/auth/local/sessions` | Public, local-only + idempotency | `{login,password}`; returns a fresh opaque session or generic `401 invalid_credentials`. |
 | `DELETE /v1/auth/sessions/current` | Authenticated + idempotency | Revokes current session and returns `204`. |
 
-`local_password` mode is refused outside local loopback. Phone/SMS, Yandex ID and SMS exemptions are deferred until a separate closed-beta auth decision; they have no endpoints in the prototype.
+`local_password` mode is refused outside local loopback. Beta adds `POST /v1/auth/phone/challenges` and `POST /v1/auth/phone/challenges/{id}/verify` after the SMS-provider, rate-limit and invite-only admission task is complete. One verified number maps to one active account; the challenge has a short TTL, bounded verification attempts and cooldown. Yandex ID is not a beta dependency.
 
 ## 3. Onboarding, profile and preferences
 
 | Endpoint | Auth / idempotency | Request | Response / validation / errors |
 |---|---|---|---|
 | `GET /v1/onboarding` | owner | none | Draft, gates (`facts_reviewed`, `calibration_done` included), `pending_jobs`, `extraction` status and server-computed completion; no other account |
-| `PATCH /v1/onboarding/profile` | owner; optimistic version | editable self fields including `search_mode` and `city_code`, `expected_version` | Updated private profile; field lengths/enums, 21+; location is server-filled if omitted; `409` stale version |
-| `PATCH /v1/onboarding/preferences` | owner; optimistic version | accepted genders, age min/max, distance, `search_mode`, `city_codes`, dating-only goals, `expected_version` | Updated preferences; range/set validation |
+| `PATCH /v1/onboarding/profile` | owner; optimistic version | editable self fields including `search_mode`, `city_code` and coarse `area_code`, `expected_version` | Updated private profile; beta accepts only `dating`, age 21–35 and Moscow; area is never returned to candidates; `409` stale version |
+| `PATCH /v1/onboarding/preferences` | owner; optimistic version | accepted genders, age min/max, `search_mode`, `city_codes`, dating-only goals, `expected_version` | Updated preferences; beta validates age range 21–35 and Moscow city equality; distance is not a beta input |
 | `GET /v1/profile` | owner | none | Full owner projection including fact visibility and moderation status |
-| `GET /v1/profiles` | authenticated; cursor | `limit` (default/max 50), `after` | Directory of currently discoverable eligible profiles. Public card only (`profile_id`, display name, computed age, gender, search mode, goal, city, public area). No account IDs, DOB, coordinates, moderation, facts or desired-partner answers. Local prototype; not the recommendation feed |
-| `GET /v1/profiles/{profile_id}` | authenticated | none | Same public card plus `bio` and self prompt answers that are not `private`. Hidden/paused/undiscoverable IDs are `404` |
+| `GET /v1/profiles` | local developer/demo only; cursor | `limit` (default/max 50), `after` | Directory of synthetic/debug profiles for the developer. It is disabled outside local/demo environments and is never a beta user surface. |
+| `GET /v1/profiles/{profile_id}` | local developer/demo only | none | Debug detail for the synthetic directory. Beta has no profile-by-ID discovery surface; candidate data is serialized only from an authorized recommendation item snapshot. |
 | `PATCH /v1/profile` | owner; optimistic version | editable bio/name/answers/visibility controls | Updated owner projection; rank-relevant version bump; answer save enqueues `extract_profile_facts` |
 | `GET /v1/profile/facts` | owner; cursor | `state=pending\|current\|confirmed\|rejected`, `limit`, `after` | Owner facts with minimized provenance (`fact_id`, `profile_side`, `fact_code`, scalar `value`, `preference_strength`, `review_state`, `visibility`, `purpose`, `confidence`, `provenance_excerpt`, versions). `extraction` status is included. Cross-account `404` |
 | `POST /v1/profile/facts` | owner; idempotency | `fact_code`, scalar `value`, optional `profile_side`, `preference_strength`, `visibility` | Manual structured fact (`source_type=form`, confirmed, default `matching_only`). Supersedes any active fact for the same `(side, code, value)` |
 | `POST /v1/profile/facts/{fact_id}/review` | owner; idempotency | `decision: accept\|edit\|reject`, optional scalar `value`, `visibility`, `expected_source_version` | `accept` confirms pending as `matching_only`; `edit` inserts confirmed `user_edit` and supersedes; `reject` inactivates pending or confirmed. Stale source `409`; other account `404` |
-| `POST /v1/onboarding/calibration-sessions` | owner; idempotency | empty object | Creates/returns versioned synthetic session and five labelled demo pairs; no real profile IDs. Skipped sessions may be reset to `started` |
-| `POST /v1/onboarding/calibration-sessions/{session_id}/choices` | owner; idempotency | `demo_pair_id`, `selection: left\|right\|neither`, optional allowlisted `reason_code` | Upserts one pair choice; never creates real impression/like/pass |
-| `POST /v1/onboarding/calibration-sessions/{session_id}/complete` | owner; idempotency | `decision: complete\|skip` | `complete` requires all pairs chosen and current `calibration=granted`. `skip` is immediate. Emits canonical `calibration_completed` |
+| `POST /v1/onboarding/calibration-sessions` | local prototype only; idempotency | empty object | Creates/returns versioned synthetic session and five labelled demo pairs; no real profile IDs. Disabled in beta. |
+| `POST /v1/onboarding/calibration-sessions/{session_id}/choices` | local prototype only; idempotency | `demo_pair_id`, `selection: left\|right\|neither`, optional allowlisted `reason_code` | Upserts one pair choice; never creates real impression/like/pass |
+| `POST /v1/onboarding/calibration-sessions/{session_id}/complete` | local prototype only; idempotency | `decision: complete\|skip` | `complete` requires all pairs chosen and current `calibration=granted`. `skip` is immediate. Emits canonical `calibration_completed` |
 | `POST /v1/onboarding/complete` | owner; idempotency | `expected_profile_version`, `expected_preferences_version` | Commits user-controlled completion. Returns `202 profile_activation_pending` while moderation runs, `202 generation_pending` if already activated/queued, or same `200` result on retry; only missing/invalid user inputs are `422` |
-| `POST /v1/profile/publish` | owner; idempotency | empty object | Local prototype activation without photos: sets `activated_at`, `visibility=eligible`, `moderation_state=approved`, emits `profile_activated`, enqueues `self` and `desired_partner` embeddings. Repeat is idempotent and re-queues current-version embeddings |
+| `POST /v1/profile/publish` | local developer/demo only; idempotency | empty object | Local prototype activation without photos. It is disabled outside local/demo environments; beta activation requires approved photo moderation. |
 
 Profile PATCH example:
 
@@ -105,7 +105,6 @@ Returns `200` ready batch, `202` pending, or `200` with `status=insufficient_sup
         "profile_id": "d2a85c90-a652-42fd-b8e1-93af2e278922",
         "display_name": "Sam",
         "age": 30,
-        "public_area_code": "moscow_central",
         "answers": [],
         "photo_urls": []
       },
@@ -122,7 +121,8 @@ The profile/reason fields come from the persisted item snapshot, not a live prof
 | `POST /v1/recommendation-items/{item_id}/impression` | batch owner + idempotency | `{surface}`; server gets batch/rank/subject, inserts unique exposure and event. Returns `{exposure_id, recommendation_item_id}`. Any duplicate for the same item returns the existing success without another event; `409 already_exposed_elsewhere` is only for inconsistent different-item state. |
 | `POST /v1/recommendation-items/{item_id}/open` | batch owner + idempotency | `{surface}`; requires valid impression, records first open. Returns `{action_id, recommendation_item_id}`. |
 | `POST /v1/recommendation-items/{item_id}/feedback` | batch owner + idempotency | `{action: like|pass, reason_code?: enum}`; requires impression/current item. One terminal decision per item; conflicting retry is `409`. Reason allowed only for pass (`not_my_type`/`photos`/`location`/`other`). Returns `{action_id, recommendation_item_id, decision}` and, for like, `match: {match_id, conversation_id, matched_at} \| null`. |
-| `POST /v1/recommendation-batches/current/refresh` | owner + idempotency | Only after expiry/consumption and quota; queues one generation, never infinite pagination. Returns `202` pending batch payload, or `409 refresh_unavailable`. |
+| `POST /v1/recommendation-batches/current/refresh` | owner + idempotency | Queues normal slot 1 after expiry/consumption; slot 2 only after every slot-1 item has terminal feedback. Never infinite pagination. |
+| `POST /v1/recommendation-batches/current/exploratory` | owner + idempotency | Available only from current `insufficient_supply`; queues a clearly labelled exploratory batch from the fully eligible/no-repeat pool. |
 
 If block/moderation makes item stale, action returns `404` and hides it. The client cannot feed arbitrary candidate IDs into actions.
 
@@ -131,14 +131,14 @@ If block/moderation makes item stale, action returns `404` and hides it. The cli
 | Endpoint | Contract |
 |---|---|
 | `GET /v1/matches?state=active&limit=20&after=...` | Authenticated member; cursor by `(matched_at,match_id)`, public-safe counterpart projection |
-| `POST /v1/matches/{match_id}/unmatch` | Member + idempotency; active → unmatched, closes conversation; repeated key stable |
+| `POST /v1/matches/{match_id}/unmatch` | Member + idempotency; active → unmatched, closes conversation and hides it from both interfaces; repeated key stable |
 | `GET /v1/conversations?limit=20&after=...` | Member summaries only; cursor by last activity |
 | `GET /v1/conversations/{conversation_id}/messages?limit=50&after=...` | Active/authorized member; allowed history only, cursor by `(allowed_at,message_id)` so async moderation cannot insert behind the cursor |
-| `POST /v1/conversations/{conversation_id}/messages` | Active member + idempotency; `{client_message_id, body}`; length/rate validation; stores `held` until moderation allows it, then recipient can read it |
-| `GET /v1/conversations/{conversation_id}/messages/{message_id}` | Member; allowed message for either member, or held/rejected status only to its sender |
+| `POST /v1/conversations/{conversation_id}/messages` | Active member + idempotency; `{client_message_id, body}`; synchronous policy/rate checks then immediate delivery and post-moderation. Before the first reply by the other participant, sender may create at most three messages. |
+| `GET /v1/conversations/{conversation_id}/messages/{message_id}` | Member; allowed message for either member; held/rejected/removed status only to its sender |
 | `POST /v1/conversations/{conversation_id}/read` | Member + idempotency; `{last_read_message_id}` must belong to conversation |
 
-Allowed conversation history is ordered by server `allowed_at,message_id`. Idempotency additionally uses unique `(sender_account_id,client_message_id)`. A block makes conversation/profile/message endpoints return `404` to both sides except the blocker can see its own block settings.
+Allowed conversation history is ordered by server `allowed_at,message_id`. Post-moderation may remove already delivered content after high-confidence policy violation or report; the removal is reflected in both interfaces without disclosing safety signals. Idempotency additionally uses unique `(sender_account_id,client_message_id)`. A block makes conversation/profile/message endpoints return `404` to both sides except the blocker can see its own block settings.
 
 ## 7. Block and report
 

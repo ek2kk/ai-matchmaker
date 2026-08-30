@@ -6,25 +6,25 @@
 
 ```mermaid
 flowchart LR
-    A[Local login + password] --> B[21+ and consent]
+    A[Local login + password / beta SMS OTP] --> B[Age and consent]
     B --> C[Self basics]
     C --> D[Desired partner]
     D --> E[Photo and prompt]
     E --> F[AI facts review]
-    F --> G[Demo calibration]
+    F --> G[Optional prototype calibration]
     G --> H[Complete and queue first batch]
     H --> I[Progressive completion]
 ```
 
 | Step | Target time | Required input | Boundary behavior |
 |---|---:|---|---|
-| Authentication | 30–60 s | Local `login + password`; revocable application session | Local auth refuses non-local loopback; see [authentication design](../authentication/design.md) |
-| Eligibility + consent | 20–30 s | DOB, terms/privacy, AI matching consent, 21+ assertion | Fail closed if age/consent missing |
-| Self basics | 45–60 s | display name, gender, orientation, `search_mode`, dating-only relationship goal, city | Self data is separate from desired partner; city is Moscow for MVP |
-| Desired partner | 45–60 s | accepted genders, age range, max distance, dating-only accepted goals, city | UI shows reciprocal implications; `search_mode` copied from self |
+| Authentication | 30–60 s | Local `login + password` in prototype; SMS OTP in beta | Local auth refuses non-local loopback; see [authentication design](../authentication/design.md) |
+| Eligibility + consent | 20–30 s | DOB, terms/privacy, AI matching consent, 21+ assertion | Beta additionally enforces 21–35; fail closed if age/consent missing |
+| Self basics | 45–60 s | display name, gender, orientation, `search_mode`, dating-only relationship goal, city and coarse area | Beta is `dating` only; coarse area is restricted and never shown to candidates |
+| Desired partner | 45–60 s | accepted genders, age range, dating-only accepted goals, city | Beta uses Moscow city equality; distance UI/filter remains disabled until a separate location policy |
 | Profile seed | 60–90 s | ≥1 photo later; ≥1 self free-text answer and ≥1 desired-partner answer | Photo must pass moderation before visibility |
 | Fact review | 30–45 s | Accept/edit/reject each extracted fact used for matching | Pending facts are not rank features |
-| Calibration | 30–60 s | 3–5 demo/consented comparisons | Never represented as real users/matches |
+| Calibration | 30–60 s | 3–5 synthetic demo comparisons | Prototype-only, never represented as real users/matches |
 
 `onboarding_completed` is committed after all user-controlled required steps, even if asynchronous photo/profile moderation is pending. In that case API returns `profile_activation_pending`; recommendation generation is queued only after server-controlled activation gates pass. This keeps the 3–5 minute funnel independent from provider latency.
 
@@ -32,14 +32,14 @@ flowchart LR
 
 Required for `onboarding_completed`:
 
-- authenticated `account` not suspended/deleted, with DOB satisfying 21+;
+- authenticated `account` not suspended/deleted, with DOB satisfying 21+; beta policy additionally requires age 21–35;
 - current required consent receipts and `allow_ai_matching = true`;
-- self: `display_name`, `gender_code`, `orientation_code`, `search_mode`, `city_code`; `relationship_goal_code` when `search_mode=dating`; server fills Moscow location;
-- desired partner: non-empty gender set, valid age range, distance, `search_mode`, `city_codes`; non-empty goal set when dating;
+- self: `display_name`, `gender_code`, `orientation_code`, `search_mode`, `city_code`, selected coarse `area_code`; `relationship_goal_code` when `search_mode=dating`; beta rejects `friendship`;
+- desired partner: non-empty gender set, beta-valid age range, `search_mode`, `city_codes`; non-empty goal set when dating. `max_distance_km` is not a beta input or hard filter;
 - at least one self answer and one desired-partner answer; the photo upload gate is a later user-controlled step and is not required for local-prototype completion;
-- `facts_reviewed`: current answer versions have no queued/running extraction jobs and no active pending facts. Rejected/pending facts never affect matching. Terminal provider failure does not block completion; the user may enter allowlisted facts explicitly or continue with none;
+- `facts_reviewed`: current answer versions have no queued/running extraction jobs and no active pending facts. Rejected/pending facts never affect matching. Terminal provider failure does not block completion: the user may enter allowlisted facts explicitly, while source text is retained for one later retry that creates pending suggestions and an in-app notification; those suggestions never alter matching without review;
 - explicit `discoverable = true` visibility choice;
-- `calibration_done`: calibration `completed` or explicitly `skipped`. Skip is allowed immediately in MVP and is stored.
+- local prototype only: `calibration_done` is `completed` or explicitly `skipped`. It is not a beta activation gate.
 
 Additional server-controlled gates before `profile_activated` and first generation:
 
@@ -47,7 +47,7 @@ Additional server-controlled gates before `profile_activated` and first generati
 - profile moderation `approved` and server-computed completion threshold satisfied;
 - current consent, account/safety state and all required embeddings or an approved fallback path.
 
-Local prototype skips the photo gate: `POST /v1/profile/publish` activates the profile, marks moderation `approved`, and enqueues embedding jobs. Photos remain a later user-controlled step.
+Local prototype skips the photo gate: `POST /v1/profile/publish` activates the profile, marks moderation `approved`, and enqueues embedding jobs. This endpoint is local/demo-only and unavailable in beta, where an approved photo is required.
 
 `POST /v1/onboarding/complete` returns `422` only for missing/invalid user-controlled inputs. Pending activation is `202 profile_activation_pending`, never `422`. Publish emits `profile_activated` and queues embeddings idempotently.
 
@@ -88,14 +88,11 @@ Fact review UI shows: side (`self` / `desired_partner`), normalized claim, sourc
 
 ## 6. Calibration
 
-Calibration estimates soft preferences and teaches the UI, not eligibility. Cards are either:
+Calibration is prototype-only. It estimates soft preferences and teaches the UI, not eligibility, using only synthetic/demo personas with licensed or generated media labelled “пример, не реальный участник”.
 
-- synthetic/demo personas with licensed/synthetic media, labelled “пример, не реальный участник”; or
-- real profiles whose owners gave explicit, revocable `calibration_use` consent, still shown only within compatible safety/visibility boundaries.
+Calibration responses are `calibration_choice` events in a separate namespace/table or payload context. They never emit canonical `like`, `pass`, `impression`, or `match`. Real-profile calibration is Later and needs separate consent/privacy/safety design.
 
-Calibration responses are `calibration_choice` events in a separate namespace/table or payload context. They never emit canonical `like`, `pass`, `impression`, or `match`; they do not notify the represented person. The first MVP should prefer synthetic/demo profiles because it needs no secondary-use consent workflow. Real consented profiles are Later.
-
-MVP calibration version `v1` is five server-owned text-only synthetic pairs with opaque `demo-v1-*` IDs (never account/profile UUIDs). Optional `reason_code` allowlist: `shared_interests`, `communication_style`, `activity_style`, `schedule_fit`, `other`. `complete` requires a choice for every pair and a current `calibration=granted` consent. `skip` is available immediately without that consent. Withdrawing `calibration` consent deletes choices and `signal_snapshot` and leaves a skip marker so the onboarding gate stays satisfied.
+Prototype calibration version `v1` is five server-owned text-only synthetic pairs with opaque `demo-v1-*` IDs (never account/profile UUIDs). Optional `reason_code` allowlist: `shared_interests`, `communication_style`, `activity_style`, `schedule_fit`, `other`. `complete` requires a choice for every pair and a current `calibration=granted` consent. `skip` is available immediately without that consent. Withdrawing `calibration` consent deletes choices and `signal_snapshot` and leaves a skip marker so local onboarding can complete.
 
 Captured signals are limited to explicit comparisons and optional reason codes. They can initialize soft weights but never override hard filters. Users can skip and clear calibration data.
 
@@ -106,7 +103,7 @@ Captured signals are limited to explicit comparisons and optional reason codes. 
 - External AI/moderation calls are jobs after commit. UI polls bounded status or refreshes; no long HTTP transaction.
 - Repeated `complete` with the same idempotency key returns the same state/job.
 - Completion transaction revalidates every gate; client progress percentage is never authoritative.
-- If extraction fails, user can continue by entering facts explicitly; if photo moderation is pending, onboarding stays completed while profile activation/recommendation remain pending.
+- If extraction fails, user can continue by entering facts explicitly. The worker retries retained source text later and creates review-only suggestions plus an in-app notification; if photo moderation is pending, onboarding stays completed while profile activation/recommendation remain pending.
 
 ## 8. Product events and funnel
 
@@ -117,7 +114,7 @@ Activation is defined as `onboarding_completed` plus at least one delivered real
 ## 9. Failure UX acceptance criteria
 
 - Required field error is specific and local; rejected model output never appears as confirmed truth.
-- `insufficient_supply` explains that no safe compatible profiles are currently available and does not encourage loosening safety constraints.
+- `insufficient_supply` explains that no standard-quality compatible profiles are currently available. It may offer a user-requested exploratory batch, explicitly labelled as such and still constrained by every hard safety/eligibility rule.
 - Provider outage permits manual structured onboarding and heuristic generation where inputs suffice.
 - Deleted/withdrawn calibration consent removes the profile from future calibration and queues deletion of retained calibration payloads.
 - Accessibility basics: keyboard flow, labeled controls, error summary, no color-only status, photo alt text workflow.

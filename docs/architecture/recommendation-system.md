@@ -23,7 +23,7 @@ flowchart TD
     I --> O[Outbox to ClickHouse]
 ```
 
-Trigger occurs after onboarding completion, relevant profile/preference update, batch expiry or consumption. A unique `generation_key = account_id:profile_version:preferences_version:policy_version:date:quota_slot` makes retries converge on one batch; `quota_slot` is the server-assigned ordinal within the daily quota.
+Trigger occurs after onboarding completion, relevant profile/preference update, batch expiry or full consumption. Beta permits two successful normal batches per calendar day; `quota_slot=2` is assigned only after every item in slot 1 has a terminal `like|pass` action. A unique `generation_key = account_id:profile_version:preferences_version:policy_version:date:quota_slot:batch_kind` makes retries converge on one batch. An exploratory batch is separately user-requested after `insufficient_supply`; it never consumes or bypasses the normal safety policy.
 
 ## 2. Stage contracts
 
@@ -37,8 +37,8 @@ The initial SQL excludes before any model call:
 4. prior `recommendation_exposures` for the actor/candidate pair;
 5. incompatible age ranges in both directions;
 6. incompatible `accepted_gender_codes` in both directions; orientation labels never substitute for explicit desired-gender intent;
-7. relationship goal intersection in both directions when `search_mode=dating`; equal `search_mode` (`dating` / `friendship`) and `city_code` ∈ `city_codes` in both directions;
-8. distance greater than either user's `max_distance_km` using PostGIS `ST_DWithin`;
+7. beta requires `search_mode=dating`, relationship-goal intersection in both directions and `city_code` ∈ `city_codes` in both directions; `friendship` remains local-prototype-only;
+8. beta uses Moscow city equality only; no client-visible distance or `max_distance_km` filter is applied until a separate location policy approves it;
 9. actor/candidate without required consent, visibility or onboarding gates.
 
 Eligibility produces candidate IDs plus versioned, minimized rank features. It never returns private fact values to the client or LLM unless explicitly allowed for matching.
@@ -69,18 +69,18 @@ score(a, c) = 0.30 * semantic(a.desired, c.self)
 eligible = reciprocal_hard_filters(actor)
 candidates = embedding_retrieve(actor.desired_embedding, eligible, limit=100)
 scored = [(c, reciprocal_score(actor, c)) for c in candidates]
-pool = diversify(scored, limit=20, exploration_slots=1)
+pool = diversify(scored, limit=20)
 result = llm_rerank(pool) if llm_budget_available() else pool
 persist(result[:5])
 ```
 
 `profile_quality` rewards completion/approved content, not protected or attractiveness proxies. No score may compensate for failed hard filter. Weights and feature transforms are stored as `ranker_version`, not remotely mutable mid-job.
 
-### 2.4 Diversity, freshness and exploration
+### 2.4 Diversity and exploratory batches
 
 - Greedy selection penalizes near-duplicate embedding clusters and repeated prompt/fact themes within one batch.
-- One of five slots may sample from the top eligible 20 using deterministic weighted sampling seeded by `recommendation_batch_id`.
-- Exploration never relaxes filters, moderation, no-repeat or minimum quality.
+- Normal beta batches contain no exploration slot.
+- After `insufficient_supply`, the user may explicitly request a separately labelled exploratory batch. It samples only from the fully reciprocal-eligible, no-repeat pool and relaxes only the normal ranking threshold.
 - New/low-exposure candidates receive a capped freshness bonus; no permanent popularity feedback loop.
 - Experiment assignment is server-side, stable and copied into batch/event snapshots.
 
@@ -117,9 +117,9 @@ One active generation job per `generation_key`. Lease expiry permits another wor
 
 ## 4. Batch persistence, exposure and replay
 
-`recommendation_batches.input_snapshot` stores actor/profile/preference versions, candidate IDs considered, experiment assignment, feature schema version and policy versions. `batch_schema_version` and each `item_schema_version` version the persisted/delivered contract. Items store component scores, final order, candidate profile/embedding versions, a minimized `public_profile_snapshot` and approved reason snapshot.
+`recommendation_batches.input_snapshot` stores actor/profile/preference versions, candidate IDs considered, batch kind, feature schema version and policy versions. `batch_schema_version` and each `item_schema_version` version the persisted/delivered contract. Items store component scores, final order, candidate profile/embedding versions, a minimized `public_profile_snapshot` and approved reason snapshot.
 
-Deterministic replay means an operator can reconstruct why stored inputs produced the saved order. It does **not** promise that calling a hosted LLM again returns byte-identical output. Raw model request/response is retained in restricted evaluation storage only for the approved period and referenced by trace ID; public delivery uses the persisted reason snapshot.
+Deterministic replay means an operator can reconstruct why stored inputs produced the saved order. It does **not** promise that calling a hosted LLM again returns byte-identical output. Runtime raw model request/response is not retained; only consented evaluation samples may be stored under the separate AI retention policy. Public delivery uses the persisted reason snapshot.
 
 Delivery never joins live display fields into a stored item. It rechecks current eligibility/safety and requires exact `candidate_profile_version`; if the version changed, the item is omitted and refill is queued. Otherwise API serializes the stored public snapshot and creates fresh signed URLs only for photo IDs that remain approved. Deletion/withdrawal erases snapshot content according to privacy policy, so post-erasure replay proves versions/actions but intentionally cannot reconstruct deleted personal content.
 
@@ -143,7 +143,7 @@ Delivery never joins live display fields into a stored item. It rechecks current
 | Actor embedding missing | Exact hard-filter pool; renormalize score over available non-semantic components and enqueue embedding | Smaller/degraded batch if at least 1 candidate |
 | Candidate embeddings sparse | Mix vector results with eligible SQL pool | Normal or smaller batch |
 | PostGIS unavailable | No generation unless one-city equality policy approved | `generation_failed`, not approximate distance |
-| Insufficient eligible supply | Persist `insufficient_supply`, no repeated retries for 24 h | Honest supply message, profile completion suggestions |
+| Insufficient eligible supply | Persist `insufficient_supply`; recheck on eligible cohort activation and at most daily as fallback | Honest waitlist message and an optional user-requested exploratory batch; never loosen hard filters |
 | Postgres unavailable | No batch generation/delivery | Retryable service error |
 | Version changes mid-job | Discard output, enqueue current version | `generation_pending` |
 | Delivery recheck removes item | Omit item, enqueue refill | Smaller batch; never stale unsafe card |
@@ -158,11 +158,11 @@ Delivery never joins live display fields into a stored item. It rechecks current
 | Whole batch worker time | p95 ≤ 30 s including queue, deadline 60 s |
 | LLM candidates | ≤20 |
 | Batch size | 1–5 |
-| Batch lifetime | 24 h or until profile/preferences version changes |
-| Generation quota | 2 successful batches/account/day (**Assumption**) |
+| Batch lifetime | 24 h, full terminal consumption, or profile/preferences version change |
+| Generation quota | 2 successful normal batches/account/day; slot 2 only after slot 1 is fully consumed |
 | Model cost | `TBD-ML02`; enforced per batch and daily global cap |
 
-Postgres batch rows are the cache. No Redis in MVP. Embeddings cache by `(profile_id, kind, source_version, model_version)`. Negative `insufficient_supply` state caches for 24 h; an operator may invalidate it after a controlled supply import.
+Postgres batch rows are the cache. No Redis in MVP. Embeddings cache by `(profile_id, kind, source_version, model_version)`. `insufficient_supply` is invalidated by eligible cohort activation or once-daily fallback recheck; an operator may invalidate it after a controlled supply import.
 
 ## 8. Feedback loop and metrics
 
@@ -177,7 +177,7 @@ Offline evaluation after enough data: hard-filter violation rate (must be zero),
 | Hand-authored transparent features/weights | Pairwise/listwise learned score |
 | Postgres feature reads | Offline feature pipeline; feature store only if online consistency requires it |
 | One bounded LLM rerank | Distilled/learned reranker if quality-cost proof exists |
-| Deterministic exploration slot | Calibrated exploration policy |
+| No exploration in normal beta batches | Calibrated exploration policy after sufficient safe data |
 | Manual evaluation set + product outcomes | Bias-aware offline datasets, shadow evaluation, model registry |
 
 Promotion gate for learned ranking: sufficient consented events, stable event semantics, leakage audit, offline gain on reply/safety-aware target, shadow test, rollback path and no worse safety guardrails.

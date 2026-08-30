@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Rule:** each phase starts only after its entry conditions and stops if failure criteria show supply, safety or contract quality is insufficient. Calendar dates and team capacity are `TBD`.
+> **Current state:** the local prototype is complete. The next work is beta hardening; each phase starts only after its entry conditions and stops if failure criteria show supply, safety or contract quality is insufficient. Calendar dates and team capacity are `TBD`.
 
 ## Phase 0: foundation
 
@@ -21,8 +21,8 @@
 
 | Item | Definition |
 |---|---|
-| Entry | Foundation gates pass; approved production phone/Yandex auth, demo media/content, capped invite cohort and incident runbook ready |
-| Deliverables | 3–5 minute onboarding, reviewed facts, photo/text moderation, synthetic demo calibration, profile visibility, blocks/reports, operator queue, supply dashboard |
+| Entry | Foundation gates pass; approved production SMS OTP, waitlist admission by reciprocal-eligibility graph, capped invite cohort and incident runbook ready |
+| Deliverables | `dating`-only 21–35 Moscow onboarding, reviewed facts, photo/text moderation, profile visibility, blocks/reports, MFA operator queue, supply dashboard and kill switches; synthetic calibration remains prototype-only |
 | Proof | Funnel events reconcile with DB samples; demo actions cannot create real interaction; safety SLA exercised |
 | Success | ≥70% onboarding completion and ≥20 eligible candidates for 80% of activated users in target segment |
 | Failure / stop | Eligible supply target missed after controlled acquisition, severe incident lacks response, or users confuse demo profiles with real people |
@@ -35,7 +35,7 @@
 | Item | Definition |
 |---|---|
 | Entry | Stable eligible supply and reviewed onboarding data; HNSW/exact recall benchmark exists |
-| Deliverables | Reciprocal eligibility, embeddings, transparent heuristic, diversity/exploration, optional bounded LLM rerank, batch/item snapshots, exposure/no-repeat, like/pass/match, conversations/messages |
+| Deliverables | Reciprocal eligibility, embeddings, transparent heuristic and diversity, optional bounded LLM rerank, two gated daily batches, explicit exploratory fallback, batch/item snapshots, exposure/no-repeat, like/pass/match, post-moderated conversations/messages |
 | Proof | Zero filter/block/moderation leaks; concurrent likes create one match; LLM failure falls back; stored batch reconstructs exposure |
 | Success | p95 generation <30 s, first batch <60 s, ≥50% matches send first message; baseline reply/safety measured |
 | Failure / stop | Any safety leak, p95 >60 s, provider cost exceeds approved cap, LLM shows no offline gain over heuristic |
@@ -65,7 +65,7 @@
 | Proof | Offline gain over v0, no hard-filter path, shadow latency/cost, online guardrails and rollback drill |
 | Success | Statistically credible improvement in reply/conversation proxy with non-inferior block/report/unmatch and retention |
 | Failure / stop | Like-only gain, subgroup/supply harm, feature staleness, unacceptable cost/latency or weak rollback |
-| Main risk | Feedback loops/popularity bias; keep exploration, exposure logging and capped freshness |
+| Main risk | Feedback loops/popularity bias; keep exposure logging and capped freshness, then add exploration only after a separate data/safety decision |
 
 ## Phase 5: optional enrichment and agents
 

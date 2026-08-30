@@ -1,6 +1,6 @@
 # Local prototype authentication
 
-> **Status:** Decided for local prototype. Phone OTP/call-code and Yandex ID are Later, before real-user closed beta.
+> **Status:** Decided for local prototype. Closed beta requires a separate SMS OTP flow; Yandex ID is not a beta dependency.
 
 ## 1. Executive summary
 
@@ -8,7 +8,7 @@
 
 ## 2. Context and scope
 
-Этот документ заменяет прежний passwordless flow только для `APP_ENV=local`. Локальный запуск может создавать несколько test accounts, чтобы проверить взаимные действия. Phone OTP/call-code, SMS exemptions, Yandex ID, invite login и password reset не реализуются в prototype и требуют отдельного closed-beta design.
+Этот документ заменяет прежний passwordless flow только для `APP_ENV=local`. Локальный запуск может создавать несколько test accounts, чтобы проверить взаимные действия. SMS OTP, invite-only admission, cooldown/rate-limit policy и verified-number lifecycle реализуются отдельной beta task; Yandex ID, SMS exemptions и password reset не являются beta scope.
 
 ## 3. System context
 
@@ -101,8 +101,8 @@ Unit tests cover login normalisation, password validation and `INV-AUTH-2`. Inte
 
 ## 12. Open questions
 
-- **Not blocking prototype:** choose phone/SMS provider, Yandex ID and exemption policy for closed beta (`TBD-AUTH03`).
-- **Not blocking prototype:** choose production auth budget (`TBD-AUTH02`).
+- **Not blocking prototype; blocking beta:** choose SMS provider, production auth budget and an anti-abuse policy for invite-only phone OTP (`TBD-AUTH02/03`).
+- **Later:** Yandex ID, SMS exemption and password-reset policy.
 
 ## 13. Out of scope
 

@@ -1,6 +1,6 @@
 # Deployment and operations
 
-> **Current evidence:** no Dockerfile, VM config, frontend package, Alembic config, CI or deployed resource definition exists. Yandex Cloud is the approved target, but no resource is provisioned.
+> **Current evidence:** local backend/frontend, Alembic and process commands exist; CI and deployed Yandex Cloud resources do not. Yandex Cloud is the approved beta target, but no resource is provisioned.
 
 ## 1. Minimal deployment topology
 
@@ -56,12 +56,13 @@ Backend settings will live only in `backend/src/ai_dating/config.py`; frontend p
 - ClickHouse endpoint/database/ingest credential;
 - environment/release ID, CORS origins, public API URL;
 - job lease/retry, activity cutoff, batch quotas and rate-limit policies.
+- safe-mode switches for admissions, recommendation generation/delivery, messaging, model calls and scoped profile visibility.
 
 All required production config fails startup. Staging/production also fail if `local_password` auth or fixed test credentials are enabled. Secrets use Yandex Lockbox, are never `VITE_*`, repository files, image layers, logs or error payloads. Rotate by overlapping credentials where provider supports it, deploy, verify, then revoke old key. Frontend receives only public API settings until a future OAuth flow is approved.
 
 ## 4. Database and migrations
 
-Alembic is proposed but not installed. Once bootstrapped, a release runs exactly one reviewed migration job against the direct database connection before application promotion. API/worker startup does not auto-migrate.
+Alembic is the installed local and beta schema path. A release runs exactly one reviewed migration job against the direct database connection before application promotion. API/worker startup does not auto-migrate.
 
 Safe sequence: backward-compatible expand migration → deploy code tolerating old/new → bounded backfill job → verify counts/invariants → switch reads/writes → later contract migration. Destructive rollback is avoided; forward-fix is preferred once data shape changes. HNSW/GiST builds use online-safe method/options supported by the actual Postgres version and are tested on staging-scale data.
 
@@ -81,7 +82,7 @@ Kafka is not in MVP. Add it only at ADR-02 triggers, then use outbox/CDC → Kaf
 
 ## 7. Backups, restore and data recovery
 
-- Enable provider-managed Postgres PITR/backups; **TBD-INF02** sets exact RPO/RTO after plan capabilities are verified. Recommended beta objective: RPO ≤15 min, RTO ≤4 h.
+- Enable provider-managed Postgres PITR/backups; beta acceptance objective is RPO ≤24 h and RTO ≤24 h, verified by a documented restore drill before the first invite.
 - Object storage versioning/retention is enabled where compatible with deletion duties; a manifest makes missing derivatives rebuildable.
 - ClickHouse canonical raw events can be replayed from retained Postgres outbox only for its short window, so provider backup is required; analytical marts are rebuildable from raw.
 - Monthly staging restore drill proposed before beta, then quarterly after stable operation. Verify row counts, FK/check constraints, latest migration, sample media references and block enforcement.
@@ -133,7 +134,7 @@ Traces cover API → DB and worker stages/provider calls using opaque entity IDs
 
 Deploy staging, run migration/invariant/integration/browser checks, generate synthetic batches, test provider failures, block/report and restore. Production starts with internal/demo accounts, then a capped closed-beta cohort. Rollback is the previous immutable artifact plus feature disable of AI rerank/generation where necessary; core safety cannot be feature-flagged off.
 
-Launch requires named owners, current runbooks, alerts routed, backup restore proof, deletion/export proof, zero hard-filter leak in test matrix, moderation coverage and approved jurisdiction/product TBDs. CI/CD mechanism itself is `TBD-INF03` because no CI configuration exists; do not document a command as real until bootstrap creates it.
+Launch requires named owners, current runbooks, alerts routed, backup restore proof, deletion/export proof, zero hard-filter leak in test matrix, moderation coverage, tested safe-mode switches and approved jurisdiction/product TBDs. CI/CD mechanism itself is `TBD-INF03` because no CI configuration exists; do not document a command as real until bootstrap creates it.
 
 ## 12. MVP versus next stage
 

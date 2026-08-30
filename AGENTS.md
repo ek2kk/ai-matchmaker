@@ -58,7 +58,7 @@ CI is `TBD-INF03`; no workflow files exist.
 
 ### Issue tracker
 
-Рабочие задачи ведутся в корневом `todos.md`; GitHub/GitLab Issues не используются. See `docs/agents/issue-tracker.md`.
+Открытые рабочие задачи ведутся в корневом `todos.md`; выполненные — в `todos-completed.md`. GitHub/GitLab Issues не используются. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
