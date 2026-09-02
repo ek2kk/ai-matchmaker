@@ -1,0 +1,27 @@
+services:
+  api:
+    image: ${BACKEND_IMAGE:-ai-matchmaker:local}
+    build: .
+    env_file: ${BACKEND_ENV_FILE:-backend/.env}
+    command: ai-matchmaker
+    ports:
+      - "127.0.0.1:8000:8000"
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  worker:
+    image: ${BACKEND_IMAGE:-ai-matchmaker:local}
+    env_file: ${BACKEND_ENV_FILE:-backend/.env}
+    command: ai-matchmaker-worker
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  relay:
+    image: ${BACKEND_IMAGE:-ai-matchmaker:local}
+    env_file: ${BACKEND_ENV_FILE:-backend/.env}
+    command: ai-matchmaker-relay
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
