@@ -6,11 +6,10 @@ from typing import Any
 from ai_dating.errors import AppError
 
 EXTRACTION_PROMPT_VERSION = "extract-facts-v4"
-EXTRACTION_MODEL_VERSION = "yandexgpt-lite/latest"
+EXTRACTION_MODEL_VERSION = "gemini-2.5-flash-lite"
 JOB_TYPE_EXTRACT = "extract_profile_facts"
 JOB_TYPE_EMBED = "embed_profile"
 PROJECTION_SCHEMA_VERSION = "embed-proj-v1"
-# ponytail: local stand-in is DS Lab gte-base (768). GigaR 2560 needs a new column.
 EMBED_DIM = 768
 EMBED_KINDS = ("self", "desired_partner")
 EXCERPT_MAX = 120

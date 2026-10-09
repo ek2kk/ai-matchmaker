@@ -1,13 +1,13 @@
-# AI Dating MVP: client brief
+# AI Matchmaker MVP: client brief
 
 > **Status:** Local prototype approved; closed-beta preparation planned
 > **Owner:** founder  
-> **Updated:** 2026-08-25  
+> **Updated:** 2026-09-02
 > **Related:** [Architecture overview](architecture/overview.md)
 
 ## 1. Product outcome
 
-AI Dating помогает взрослому пользователю получить небольшую подборку взаимно совместимых знакомств вместо бесконечного swipe feed. За 3–5 минут пользователь описывает себя и желаемого партнёра, проверяет извлечённые AI факты и получает до пяти объяснимых intro cards.
+AI Matchmaker помогает взрослому пользователю получить небольшую подборку взаимно совместимых знакомств вместо бесконечного swipe feed. За 3–5 минут пользователь описывает себя и желаемого партнёра, проверяет извлечённые AI факты и получает до пяти объяснимых intro cards.
 
 Основной риск MVP не технический, а рыночный: без плотного eligible supply даже хороший ranker не создаст ценность. Поэтому запуск ограничен одним сегментом и одной географией.
 
@@ -24,7 +24,7 @@ AI Dating помогает взрослому пользователю полу�
 
 ## 3. Critical journeys
 
-1. В local prototype пользователь создаёт `login + password`, затем подтверждает возраст 21+, обязательные consents и Москву как coarse location. Реальный closed beta использует отдельный SMS OTP flow; local credentials описаны в [authentication design](authentication/design.md).
+1. В local prototype пользователь создаёт `login + password`. Реальный closed beta входит через проверенные Telegram Mini App launch data и одноразовый invite. Затем пользователь подтверждает возраст 21+, обязательные consents и Москву как coarse location; auth contracts описаны в [authentication design](authentication/design.md).
 2. Заполняет раздельно `self profile` и `desired partner`, проверяет AI-extracted `profile_facts`.
 3. В prototype опционально калибрует soft preferences на явно обозначенных synthetic demo profiles. Эти действия не создают реальные likes или matches и не входят в первую beta cohort.
 4. Получает `recommendation_batch` максимум из пяти кандидатов, прошедших взаимные hard filters и safety checks.
@@ -36,7 +36,7 @@ AI Dating помогает взрослому пользователю полу�
 
 | Must ship | Later / не входит в MVP |
 |---|---|
-| Local login/password auth, 21+ gate, consent | Social scraping или enrichment без informed consent |
+| Local login/password; beta Telegram auth; 21+ gate and consent | Social scraping или enrichment без informed consent |
 | Self profile, desired partner, photos, prompts | Autonomous dating agents |
 | Reciprocal eligibility и safety exclusions | Infinite swipe feed |
 | Embedding retrieval + heuristic ranker + bounded LLM reranker | Learned ranking model, feature store, realtime ML platform |
@@ -57,6 +57,7 @@ AI Dating помогает взрослому пользователю полу�
 - В beta пользователь получает до двух batch в сутки по пять items; второй генерируется только после terminal actions по всем items первого. No-repeat сохраняется.
 - При `insufficient_supply` пользователь может явно запросить помеченный exploratory batch только из полностью reciprocal-eligible pool; hard filters никогда не ослабляются.
 - Реальная beta cohort выходит из waitlist только когда reciprocal-eligibility graph даёт ей достаточный reserve active candidates; это не отдельная quota по полу или возрасту.
+- Admission ограничен 100 active accounts; новый account допускается только при reserve не менее 20 reciprocal eligible candidates. Telegram `initData` живёт 5 минут, application session — 24 часа; Telegram не подтверждает возраст, телефон или уникальность человека.
 - Likes не являются единственной optimization target. Reply, sustained conversation, unmatch/report/block и retention имеют больший вес при последующем обучении.
 
 ## 6. Success and guardrails
@@ -92,7 +93,8 @@ AI Dating помогает взрослому пользователю полу�
 |---|---|---|---|
 | `P01` | Decided | Первый регион, age band и relationship segment | Москва, 21–35, `dating` в первой beta; `friendship` prototype-only |
 | `P02` | Decided | Политика age/location verification и допустимая точность location | DOB declaration + 21–35 beta policy; выбранная coarse area в Москве, без continuous GPS и client-visible distance |
-| `TBD-SEC01` | Closed-beta gate | Retention/deletion по launch jurisdiction | Legal review до real-user closed beta; conservative defaults из [privacy-safety](architecture/privacy-safety.md) |
-| `OPS01` | Decided with risk | Кто владеет moderation queue и incident response | Founder; invite-only beta, best effort staffed hours, public launch требует backup owner |
+| `TBD-SEC01` | Closed-beta gate | Legal basis и retention reports/audit/evidence для РФ | Legal review до real-user closed beta; технические retention defaults из [privacy-safety](architecture/privacy-safety.md) уже утверждены |
+| `OPS01` | Decided with risk | Кто владеет moderation queue и incident response | Founder — единственный owner; severe incident: immediate kill switch, acknowledgement ≤30 min, containment ≤2 h. Public launch требует backup owner |
+| `AUTH01` | Decided | Beta admission и auth TTL | Telegram-only login; 5-minute `initData`, 24-hour session, 32-byte one-time invite hashed in DB, 7-day expiry, 100 active-account cap |
 | `TBD-P03` | Important | Можно ли повторно показывать кандидата после существенного profile change | Нет в MVP; вернуться при исчерпании supply |
 | `P04` | Decided | Taxonomy и semantics для gender/orientation/relationship goal | `man|woman`, `heterosexual`, три dating goals; `friendship` prototype-only до отдельного beta decision |

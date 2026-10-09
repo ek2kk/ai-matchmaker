@@ -1,6 +1,6 @@
 # Deployment and operations
 
-> **Current evidence:** local backend/frontend, Alembic and process commands exist; CI and deployed Yandex Cloud resources do not. Yandex Cloud is the approved beta target, but no resource is provisioned.
+> **Current evidence:** local backend/frontend, Alembic, Docker image and Docker Compose process manifest exist; CI and deployed Yandex Cloud resources do not. Yandex Cloud is the approved beta target, but no resource is provisioned.
 
 ## 1. Minimal deployment topology
 
@@ -13,8 +13,7 @@ flowchart TB
     PG[(Yandex Managed PostgreSQL)]
     OBJ[(Yandex Object Storage)]
     CH[(Yandex Managed ClickHouse)]
-    OAI[Yandex AI Studio]
-    GIGA[GigaChat EmbeddingsGigaR]
+    DS[DS Lab API]
     OBS[Yandex Monitoring and logs]
 
     SPA --> API
@@ -23,8 +22,7 @@ flowchart TB
     SPA --> OBJ
     W --> PG
     W --> OBJ
-    W --> OAI
-    W --> GIGA
+    W --> DS
     R --> PG
     R --> CH
     API --> OBS
@@ -49,9 +47,9 @@ No shared database, auth identities/sessions, bucket, secret or model evaluation
 Backend settings will live only in `backend/src/ai_dating/config.py`; frontend public settings only in `frontend/src/lib/env.ts`. Exact variables are created during bootstrap, but required logical settings are:
 
 - database direct/session URL for Alembic and runtime pooled URL;
-- local-password session lifetime, loopback binding and the future production auth mode/credentials;
+- local-password session lifetime, loopback binding and Telegram production auth credentials;
 - Yandex Object Storage endpoint/bucket and service credential;
-- Yandex AI Studio and GigaChat credentials, model/config version allowlist and cost limits (opt-in locally). Local extraction and embeddings may use DS Lab via `DSLAB_API_KEY` (`gte-base` for embeddings) or OpenRouter via `OPENROUTER_API_KEY`; missing keys use the deterministic fake;
+- one `DSLAB_API_KEY`, generation/embedding model versions, cost limits and timeouts. DS Lab is the only remote AI provider; missing credentials use deterministic fakes only in local/tests;
 - extraction prompt/model versions, provider timeout, job lease and `extract_profile_facts` retry budget (default 3);
 - ClickHouse endpoint/database/ingest credential;
 - environment/release ID, CORS origins, public API URL;
@@ -74,7 +72,7 @@ Private buckets: original uploads, approved derivatives, restricted moderation e
 
 ## 6. Background jobs and event ingestion
 
-DB worker claims `background_jobs` with `FOR UPDATE SKIP LOCKED`, a lease, `dedup_key`, bounded attempts and per-job timeout. The extraction worker only claims `extract_profile_facts`; unknown `job_type` values stay queued. Jobs are small: extraction, embedding, batch generation, photo processing/moderation, export/deletion. Provider calls run after the claim transaction commits. Graceful shutdown stops claiming, finishes or releases current lease before platform deadline. Local command: `uv run ai-dating-worker`.
+DB worker claims `background_jobs` with `FOR UPDATE SKIP LOCKED`, a lease, `dedup_key`, bounded attempts and per-job timeout. The extraction worker only claims `extract_profile_facts`; unknown `job_type` values stay queued. Jobs are small: extraction, embedding, batch generation, photo processing/moderation, export/deletion. Provider calls run after the claim transaction commits. Graceful shutdown stops claiming, finishes or releases current lease before platform deadline. Local command: `uv run ai-matchmaker-worker`.
 
 Outbox relay separately batches canonical events to ClickHouse. It never marks delivered before sink acknowledgement. Backpressure increases lag while reserved DB headroom remains. Alert at 5-minute lag; if projected outbox growth leaves <24 hours of DB headroom, throttle/disable recommendation generation and non-safety writes at the API boundary. Never commit a domain action without its required outbox event; preserve block/report/security writes from reserved capacity.
 
@@ -112,7 +110,7 @@ Traces cover API → DB and worker stages/provider calls using opaque entity IDs
 | Non-AI API latency | p95 <400 ms | Alert >800 ms for 15 min |
 | Batch generation | p95 <30 s, 99% <60 s | Alert failure >5% or fallback >20% for 30 min |
 | Outbox lag | p95 <60 s | Page >5 min for 15 min |
-| Moderation severe queue | `TBD-OPS01` response SLA | Page founder; add backup owner before public launch |
+| Moderation severe queue | acknowledge ≤30 min; contain ≤2 h | Founder immediately enables the relevant kill switch; add backup owner before public launch |
 | Safety eligibility leak | 0 | Immediate incident, disable recommendation delivery if needed |
 | Deletion jobs | 99% within approved SLA | Page before SLA breach |
 | Backup freshness | Within configured RPO | Page on missed backup |
@@ -121,8 +119,7 @@ Traces cover API → DB and worker stages/provider calls using opaque entity IDs
 
 | Failure | Behavior | Recovery |
 |---|---|---|
-| Yandex AI Studio unavailable/rate limited | Manual facts, cached embeddings, heuristic batch; new media held if moderation depends on provider | Circuit breaker, capped retry, pin fallback |
-| GigaChat embeddings unavailable/rate limited | Exact eligible pool with non-semantic heuristic; enqueue embedding retry | Circuit breaker, capped retry; no unsafe relaxation of filters |
+| DS Lab unavailable/rate limited | Manual facts, cached embeddings and heuristic/exact eligible pool; new media held if moderation depends on provider | Capped retry, pin fallback; no unsafe relaxation of filters |
 | ClickHouse unavailable | Domain transaction/outbox continues; analytics lag | Relay retry; protect PG with lag/storage alerts |
 | Worker unavailable | API works, generation/moderation pending | Restart same artifact; leases expire safely |
 | Object storage unavailable | No upload/media URL; existing text/API may work | Retry, no DB metadata promotion before object verify |

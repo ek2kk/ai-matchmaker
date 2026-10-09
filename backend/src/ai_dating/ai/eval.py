@@ -7,7 +7,7 @@ import math
 from pathlib import Path
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-from ai_dating.ai.client import yandex_model_version
+from ai_dating.ai.client import rerank_model_version
 from ai_dating.ai.rerank import (
     RERANK_PROJECTION_VERSION,
     RERANK_PROMPT_VERSION,
@@ -150,7 +150,7 @@ def manifest_for(pools: list[dict], report: dict, *, human: bool) -> dict:
         "dataset_hash": dataset_hash(pools),
         "prompt_version": RERANK_PROMPT_VERSION,
         "projection_version": RERANK_PROJECTION_VERSION,
-        "model_version": yandex_model_version(settings),
+        "model_version": rerank_model_version(settings),
         "thresholds": {
             "valid_result_rate": 0.95,
             "llm_win_rate": 0.60,

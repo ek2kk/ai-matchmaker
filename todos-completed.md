@@ -1,4 +1,4 @@
-# Выполненные задачи MVP AI Dating
+# Выполненные задачи MVP AI Matchmaker
 
 > **Статус:** архив выполненных задач; не является рабочим backlog.
 > **Открытые задачи:** [todos.md](todos.md).
@@ -19,9 +19,9 @@ Prototype должен проверять продуктовый flow, не вы
 - Зафиксированы решения: Москва, 21–35, отдельные `dating|friendship`, heterosexual `man|woman`, goals `serious_relationship|friends_with_benefits|unsure`.
 - Зафиксированы DOB declaration, coarse Moscow location и отсутствие continuous GPS; более сильная age assurance остаётся launch-risk review.
 - Founder является владельцем продукта, платформы, CI/CD, Trust & Safety и incident response.
-- Зафиксированы Yandex Cloud data plane, Yandex AI Studio для generation и `EmbeddingsGigaR` для retrieval embeddings (`vector(2560)`).
-- Зафиксирован prototype auth: local `login + password` с DB-backed sessions; production phone/SMS и Yandex ID реализуются отдельной задачей и не требуются для bootstrap.
-- Нерешённые `TBD-SEC01/04`, SLA, RPO/RTO, `TBD-ML01/02`, `TBD-AUTH02` и production SMS provider перенесены в gate перед closed beta.
+- Зафиксированы Yandex Cloud data plane и versioned external AI boundary; актуальный provider contract теперь использует только DS Lab API.
+- Зафиксирован prototype auth: local `login + password` с DB-backed sessions; production Telegram identity реализуется отдельной задачей и не требуется для bootstrap.
+- Нерешённые `TBD-SEC01/04`, SLA, RPO/RTO, `TBD-ML01/02`, `TBD-AUTH02` и Telegram admission policy перенесены в gate перед closed beta.
 
 ### Как проверить
 
@@ -36,7 +36,7 @@ Founder утверждает prototype scope. Legal/security и operations gates
 
 - Зависит от: ничего.
 - Источник: [решения client brief](docs/client-brief.md#8-decisions-needed-before-implementation), [assumptions overview](docs/architecture/overview.md#11-assumptions-and-open-questions).
-- Не включать реальных пользователей, реальные SMS или production PII, пока не закрыт closed-beta gate.
+- Не включать реальных пользователей или production PII, пока не закрыт closed-beta gate.
 
 ### Вне scope
 
@@ -86,7 +86,7 @@ curl -fsS http://localhost:8000/healthz
 
 ### Детальные итерации задачи 1
 
-> **Результат задачи:** один локально запускаемый контур `React SPA → FastAPI`. Он не требует реальной БД, SMS, cloud credentials или Docker. Каждый подпункт — отдельный маленький PR; после 1.5 можно начинать task 2 или task 3.
+> **Результат задачи:** один локально запускаемый контур `React SPA → FastAPI`. Он не требует реальной БД, cloud credentials или Docker. Каждый подпункт — отдельный маленький PR; после 1.5 можно начинать task 2 или task 3.
 
 #### 1.1. Превратить Python stub в минимальный FastAPI application
 
@@ -107,7 +107,7 @@ curl -fsS http://localhost:8000/healthz
 cd backend && uv sync --dev
 cd backend && uv run pytest tests/test_health.py -q
 cd backend && uv run ruff check . && uv run ruff format --check .
-cd backend && uv run ai-dating
+cd backend && uv run ai-matchmaker
 curl -fsS http://localhost:8000/healthz
 ```
 
@@ -520,7 +520,7 @@ Identity и consent — trust boundary для каждого профиля, mod
 - `POST /v1/auth/local/register` и `POST /v1/auth/local/sessions` принимают только normalised `login + password`; unknown и invalid login возвращают одинаковый `401 invalid_credentials` при sign-in.
 - Password хранится только как Argon2id hash; plaintext не попадает в DB, logs, events, responses или model calls.
 - Session token хранится только как hash; logout/block/deletion и expiry немедленно запрещают дальнейшие authenticated calls.
-- `local_password` configuration отказывается запускаться вне `APP_ENV=local` или при non-loopback binding; production phone/SMS/Yandex endpoints отсутствуют.
+- `local_password` configuration отказывается запускаться вне `APP_ENV=local` или при non-loopback binding; production identity endpoints отсутствуют.
 - Registration bootstrap идемпотентен, создаёт `status=onboarding` и не принимает account ID от клиента.
 - История consent append-only, а текущие решения по purpose вычисляются однозначно.
 - Отзыв согласия на AI matching скрывает профиль из discovery и ставит в очередь удаление/инвалидацию derived data.
@@ -546,7 +546,7 @@ cd frontend && pnpm lint && pnpm tsc --noEmit && pnpm build
 
 ### Вне scope
 
-- Phone/SMS, Yandex ID, invitations, password reset/change, MFA, публичные профили и staff admin UI.
+- Дополнительные identity providers, invitations, password reset/change, MFA, публичные профили и staff admin UI.
 
 ## [x] 4. Реализовать structured onboarding и desired-partner preferences
 
@@ -751,7 +751,7 @@ cd backend && uv run ruff check . && uv run ruff format --check .
 
 ### Что создаём?
 
-Rerank только верхних eligible candidates из heuristic pool через bounded-вызов Yandex AI Studio, валидируем результат и сохраняем точный snapshot public profile/reason, использованный при delivery.
+Rerank только верхних eligible candidates из heuristic pool через bounded-вызов external model, валидируем результат и сохраняем точный snapshot public profile/reason, использованный при delivery. Актуальный runtime provider — DS Lab API.
 
 ### Зачем?
 

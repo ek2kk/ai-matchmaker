@@ -10,11 +10,7 @@ from ai_dating.config import Settings
 def run_extraction(
     settings: Settings, prompt_code: str, answer_text: str
 ) -> tuple[list[dict], ProviderResult]:
-    if (
-        settings.dslab_api_key
-        or settings.openrouter_api_key
-        or (settings.yandex_ai_base_url and settings.yandex_ai_api_key)
-    ):
+    if settings.dslab_api_key:
         result = extract_chat_completion(settings, prompt_code, answer_text)
     else:
         result = extract_with_fake(prompt_code, answer_text)

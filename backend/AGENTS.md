@@ -4,7 +4,7 @@ Read [../AGENTS.md](../AGENTS.md) and the relevant file under [../docs/architect
 
 ## Current state
 
-Runnable FastAPI app: `uv sync --dev`, `uv run pytest -q`, `uv run ruff check . && uv run ruff format --check .`, `uv run ai-dating`. Local auth: `POST /v1/auth/local/register`, `POST /v1/auth/local/sessions`, `DELETE /v1/auth/sessions/current` (loopback + `APP_ENV=local` only). Outbox relay: `uv run ai-dating-relay`. Extraction worker: `uv run ai-dating-worker`. Replay: `uv run ai-dating-replay --event-id <uuid> [--dry-run]`. Config lives in `src/ai_dating/config.py`. Canonical events are JSON Schema under `src/ai_dating/events/schemas/`; `enqueue_event` writes `outbox_events` in the domain transaction. ClickHouse raw table is `clickhouse/raw_events.sql`. Postgres driver is `psycopg`. Yandex AI Studio is opt-in; without credentials extraction uses the local fake.
+Runnable FastAPI app: `uv sync --dev`, `uv run pytest -q`, `uv run ruff check . && uv run ruff format --check .`, `uv run ai-matchmaker`. Local auth: `POST /v1/auth/local/register`, `POST /v1/auth/local/sessions`, `DELETE /v1/auth/sessions/current` (loopback + `APP_ENV=local` only). Outbox relay: `uv run ai-matchmaker-relay`. Extraction worker: `uv run ai-matchmaker-worker`. Replay: `uv run ai-matchmaker-replay --event-id <uuid> [--dry-run]`. Config lives in `src/ai_dating/config.py`. Canonical events are JSON Schema under `src/ai_dating/events/schemas/`; `enqueue_event` writes `outbox_events` in the domain transaction. ClickHouse raw table is `clickhouse/raw_events.sql`. Postgres driver is `psycopg`. DS Lab is the only remote AI provider; without credentials local extraction and embeddings use deterministic fakes.
 
 ## Target boundaries
 

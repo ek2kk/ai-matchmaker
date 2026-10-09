@@ -17,6 +17,8 @@ def test_readyz_503_when_production_incomplete():
         release_id="rel-1",
         database_url=None,
         database_direct_url=None,
+        dslab_api_key="test",
+        telegram_bot_token="test",
         media_auto_approve=False,
         message_auto_approve=False,
     )

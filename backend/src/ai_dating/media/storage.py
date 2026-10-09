@@ -147,7 +147,7 @@ class S3Store(ObjectStore):
 def open_store(settings: Settings) -> ObjectStore:
     if settings.object_storage_backend == "s3":
         return S3Store(settings)
-    root = settings.object_storage_path or str(Path(gettempdir()) / "ai-dating-media")
+    root = settings.object_storage_path or str(Path(gettempdir()) / "ai-matchmaker-media")
     return LocalStore(Path(root), settings.media_signing_secret)
 
 

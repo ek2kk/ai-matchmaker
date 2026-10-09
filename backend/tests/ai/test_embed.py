@@ -1,4 +1,8 @@
-from ai_dating.ai.client import embedding_model_version
+from ai_dating.ai.client import (
+    embedding_model_version,
+    extraction_model_version,
+    rerank_model_version,
+)
 from ai_dating.ai.embed import run_embedding
 from ai_dating.ai.schema import EMBED_DIM
 from ai_dating.config import Settings
@@ -17,17 +21,8 @@ def test_fake_embedding_matches_dim_and_is_normalized():
     assert abs(norm - 1.0) < 1e-6
 
 
-def test_dslab_key_selects_gte_base_without_separate_embedding_key():
+def test_dslab_models_are_used_for_all_remote_ai_calls():
     settings = Settings(_env_file=None, dslab_api_key="sk-dslab-test")
+    assert extraction_model_version(settings) == "gemini-2.5-flash-lite"
     assert embedding_model_version(settings) == "gte-base"
-
-
-def test_explicit_embedding_credentials_win_over_dslab():
-    settings = Settings(
-        _env_file=None,
-        dslab_api_key="sk-dslab-test",
-        embedding_api_key="sk-embed",
-        embedding_base_url="https://example.invalid/v1",
-        embedding_model="EmbeddingsGigaR",
-    )
-    assert embedding_model_version(settings) == "EmbeddingsGigaR"
+    assert rerank_model_version(settings) == "gemini-2.5-flash-lite"

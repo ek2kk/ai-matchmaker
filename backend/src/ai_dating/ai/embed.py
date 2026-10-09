@@ -4,7 +4,6 @@ from ai_dating.ai.client import (
     ProviderError,
     ProviderResult,
     embed_text,
-    embedding_credentials,
 )
 from ai_dating.ai.fake import embed_with_fake
 from ai_dating.ai.schema import EMBED_DIM
@@ -12,7 +11,7 @@ from ai_dating.config import Settings
 
 
 def run_embedding(settings: Settings, text: str) -> ProviderResult:
-    if embedding_credentials(settings) is not None:
+    if settings.dslab_api_key:
         result = embed_text(settings, text)
     else:
         result = embed_with_fake(text, EMBED_DIM)

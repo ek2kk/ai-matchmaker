@@ -8,7 +8,7 @@
 
 | Item | Definition |
 |---|---|
-| Entry | Product approves `TBD-P01`, `TBD-P02`, `TBD-P04`; founder is the named product, platform, CI/CD, Trust & Safety and incident-response owner |
+| Entry | Product decisions P01, P02 and P04 are approved; founder is the sole named product, platform, CI/CD, Trust & Safety and incident-response owner |
 | Deliverables | Backend/frontend bootstrap; local login/password and DB sessions; initial Alembic schema/grants; private Yandex Object Storage; config/secrets; account/profile/preferences/consent; outbox/ClickHouse path; logs/metrics/traces; staging |
 | Proof | Cross-account auth tests, migration/restore drill, consent withdrawal, media isolation, event dedup, no sensitive logging |
 | Success | Internal users complete structured onboarding; domain/event state reconstructs correctly |
@@ -21,7 +21,7 @@
 
 | Item | Definition |
 |---|---|
-| Entry | Foundation gates pass; approved production SMS OTP, waitlist admission by reciprocal-eligibility graph, capped invite cohort and incident runbook ready |
+| Entry | Foundation gates pass; verified Telegram Mini App login (5-minute `initData`, 24-hour session), waitlist admission by reciprocal-eligibility graph, 100-account cap and incident runbook ready |
 | Deliverables | `dating`-only 21–35 Moscow onboarding, reviewed facts, photo/text moderation, profile visibility, blocks/reports, MFA operator queue, supply dashboard and kill switches; synthetic calibration remains prototype-only |
 | Proof | Funnel events reconcile with DB samples; demo actions cannot create real interaction; safety SLA exercised |
 | Success | ≥70% onboarding completion and ≥20 eligible candidates for 80% of activated users in target segment |

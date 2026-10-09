@@ -323,8 +323,8 @@ def _rerank_or_fallback(
 
     from ai_dating.ai.client import (
         ProviderError,
-        yandex_chat_completion,
-        yandex_model_version,
+        rerank_chat_completion,
+        rerank_model_version,
     )
     from ai_dating.ai.models import AiOperation
     from ai_dating.ai.rerank import (
@@ -368,7 +368,7 @@ def _rerank_or_fallback(
         separators=(",", ":"),
     )
     input_tokens = max(1, len(user) // 4)
-    model_name = yandex_model_version(settings)
+    model_name = rerank_model_version(settings)
     now = _now()
     start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     spent = db.scalar(
@@ -395,7 +395,7 @@ def _rerank_or_fallback(
             raise RerankRejected("token_cap")
         if spent_val + est > settings.rerank_daily_cost_rub:
             raise RerankRejected("cost_cap")
-        result = yandex_chat_completion(
+        result = rerank_chat_completion(
             settings,
             system=RERANK_SYSTEM,
             user=user,

@@ -10,3 +10,12 @@
 body {
   margin: 0;
 }
+html {
+  background: var(--app-background, #f8fafc);
+  color: var(--app-foreground, #0f172a);
+}
+
+body {
+  padding-top: var(--tg-safe-area-inset-top, 0px);
+  padding-bottom: var(--tg-safe-area-inset-bottom, 0px);
+}

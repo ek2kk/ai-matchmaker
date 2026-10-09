@@ -1,4 +1,4 @@
-# Backlog MVP AI Dating
+# Backlog MVP AI Matchmaker
 
 > **Статус:** открытые задачи реализации.
 > **Выполненное:** [архив завершённых задач](todos-completed.md).
@@ -12,32 +12,33 @@
 
 - Triage: `ready-for-human`
 
-- Утвердить `TBD-SEC01/04`: legal basis, retention/export/deletion, employee access и encryption posture для РФ.
-- Задать founder coverage, severe-report SLA и backup owner.
+- Техническая retention/export/deletion policy утверждена: 7-day recovery/outbox, 13-month anonymized product events, raw model payload off (≤30 days только с отдельным approval); legal review до первого real-user invite утверждает legal basis и retention reports/audit/evidence для РФ.
+- Founder — единственный owner moderation queue и incident response; backup owner отсутствует и обязателен до public launch. Severe incident: immediate kill switch, acknowledgement ≤30 min, containment ≤2 h.
 - Подтвердить provider-managed backup capabilities и принять RPO ≤24 h / RTO ≤24 h.
-- Утвердить extraction quality gate, LLM/auth budget и production SMS provider **до** первого real-user invite.
+- Telegram admission policy утверждена: verified 5-minute `initData`, 24-hour application session, one-time 32-byte hashed invite with 7-day expiry, 100 active-account cap и reciprocal-supply reserve ≥20. Пересмотр SMS/additional verification только при legal requirement, ≥3 confirmed ban-evasion incidents за 7 дней либо coordinated abuse у ≥10% admitted accounts.
+- Утвердить extraction quality gate и DS Lab/auth budget **до** первого real-user invite.
 - Выполнить security/privacy/restore drills; только затем разрешать реальные анкеты и приглашения.
 
-## [ ] 0.2. Добавить beta SMS OTP и invite-only admission
+## [ ] 0.2. Добавить Telegram auth и invite-only admission
 
 - Triage: `needs-info`
 
 ### Что создаём?
 
-Заменяем local-password boundary в beta на SMS OTP и controlled waitlist admission для московской `dating` cohort 21–35.
+Заменяем local-password boundary в beta на проверку Telegram Mini App `initData`, DB-backed application session и controlled waitlist admission для московской `dating` cohort 21–35.
 
 ### Готово, когда
 
 - Local-password endpoints и fixed demo accounts физически недоступны вне local/demo environment.
-- Один verified phone number создаёт не более одного active account; challenge имеет TTL, cooldown, bounded attempts и rate limits по номеру/IP/device signal.
+- Один Telegram user ID создаёт не более одного active account; `initData` не старше 5 минут, session живёт 24 часа, а новый account требует одноразовый 32-byte invite с 7-day expiry, хранимый только как hash.
 - Beta принимает только `dating`, DOB 21–35 и Moscow city; preference age range также 21–35. Возраст остаётся declaration с operator review/hide flow при сомнении.
 - Waitlist выпускает cohort по reciprocal-eligibility graph, а не отдельным quotas по полу или возрасту; invite нельзя активировать без нужного supply reserve.
 
 ### Примечания для агента
 
-- Зависит от: 0.1 (approved SMS provider, budget and legal terms).
+- Зависит от: 0.1 (approved Telegram admission policy, budget and legal terms).
 - Supersedes beta limitations of completed task 3; source: [authentication design](docs/authentication/design.md), [client brief](docs/client-brief.md).
-- Не добавлять Yandex ID, password fallback или публичную регистрацию.
+- Не добавлять второй production login, password fallback или публичную регистрацию.
 
 ## [ ] 0.3. Привести onboarding и recommendation policy к beta contract
 
@@ -95,13 +96,13 @@
 ### Готово, когда
 
 - Separate staff identity/MFA, least-privilege `moderator`/`admin` roles и append-only audit каждого restricted read/write.
-- Appeal/report flow позволяет founder или backup owner restore/hide account, не раскрывая model scores или reporter details.
+- Appeal/report flow позволяет founder restore/hide account, не раскрывая model scores или reporter details; backup owner обязателен только до public launch.
 - Safe mode fail-closes new admissions/recommendations/messages as configured; owner и recovery action аудируются.
 - Staging drill доказывает provider outage, bad model, safety-disable и restore against RPO/RTO objective.
 
 ### Примечания для агента
 
-- Depends on 0.1 for owners/SLA; extends completed task 7 and deployment task 14.
+- Depends on 0.1 for founder coverage/SLA; extends completed task 7 and deployment task 14.
 - Не строить case-management platform или отдельный moderation service.
 
 ## [ ] 12. Экспортировать и удалять пользовательские данные end to end
@@ -191,6 +192,13 @@ cd backend && uv run ruff check . && uv run ruff format --check .
 
 - Triage: `needs-info`
 
+### Прогресс
+
+- [x] Один non-root Docker image с locked backend dependencies запускает API, worker и relay; Docker Compose выбран как VM manifest.
+- [x] One-shot Alembic command выполняется из этого image до запуска процессов; application startup не мигрирует схему.
+- [x] Frontend production build проверен с явным `VITE_API_BASE_URL`.
+- [ ] Provision staging resources, registry image push by commit SHA, frontend upload, migration/restore and incident proofs.
+
 ### Что создаём?
 
 Разворачиваем один immutable backend artifact как API, worker и relay processes вместе с frontend, затем доказываем корректность migrations, monitoring, backup/restore и incident controls до приглашения ограниченной beta cohort.
@@ -223,7 +231,7 @@ cd frontend && pnpm lint && pnpm tsc --noEmit && pnpm build
 
 - Зависит от: всех активных beta tasks, включая 0.1–0.5 и 12–13.
 - Источник: [deployment](docs/architecture/deployment.md), [roadmap Phase 0–2](docs/architecture/roadmap.md), [client success and guardrails](docs/client-brief.md#6-success-and-guardrails).
-- Использовать утверждённый Yandex Cloud data plane и Yandex AI Studio; не добавлять Kubernetes, multi-region, Supabase, Railway или microservices.
+- Использовать утверждённый Yandex Cloud data plane и DS Lab API; не добавлять Kubernetes, multi-region, Supabase, Railway или microservices.
 
 ### Вне scope
 

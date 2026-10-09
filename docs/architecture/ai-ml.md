@@ -7,7 +7,7 @@
 | Capability | Input | Output | Authority | Fallback |
 |---|---|---|---|---|
 | Fact extraction | One user-authored answer, allowlisted schema | Pending normalized facts + confidence | User confirms/edits/rejects | Manual structured input |
-| Embeddings | Deterministic minimized self/desired projection | `EmbeddingsGigaR` 2560-dimensional versioned vector | Retrieval hint only | Exact eligible SQL + heuristic |
+| Embeddings | Deterministic minimized self/desired projection | DS Lab `gte-base` 768-dimensional versioned vector | Retrieval hint only | Exact eligible SQL + heuristic |
 | LLM reranking | Actor preference summary + ≤20 eligible candidate summaries | Ordered supplied IDs + reason codes | Server validates; cannot add IDs | Heuristic order |
 | Text/photo moderation | Submitted content/media derivative | Allow/hold/reject signal | Policy + human escalation for material cases | Hold non-public, fail closed |
 
@@ -27,7 +27,7 @@ Never send unless a separately approved feature proves necessity and consent:
 - inferred sensitive traits, third-party data, contact lists or social profiles;
 - original photo when a minimized derivative suffices for moderation.
 
-Model prompts and responses must not enter general application logs. Yandex AI Studio is the generation provider; GigaChat `EmbeddingsGigaR` is the retrieval provider. Local prototype may call DS Lab via `DSLAB_API_KEY` (`gemini-2.5-flash-lite` for extraction, `gte-base` 768-d for embeddings) or OpenRouter as an OpenAI-compatible stand-in; neither is a production provider. Their retention/data-region contracts require a recorded production review; use the most restrictive available settings and only the OpenAI-compatible API subset covered by contract tests.
+Model prompts and responses must not enter general application logs. DS Lab is the only remote AI provider: `gemini-2.5-flash-lite` handles extraction and bounded reranking, while `gte-base` produces 768-dimensional embeddings. Local/tests use deterministic fakes when `DSLAB_API_KEY` is absent. DS Lab retention/data-region terms require a recorded production review; use the most restrictive available settings and only the OpenAI-compatible API subset covered by contract tests.
 
 ## 3. Extraction contract and guardrails
 
@@ -64,7 +64,7 @@ Canonical event `source_type`: DB `free_text` → `extracted`; DB `form` or `use
 
 ## 4. Embedding contract
 
-Projection builder is deterministic and covered by golden fixtures. It emits `projection_schema_version`, ordered field labels and normalized confirmed text. Production retrieval is `EmbeddingsGigaR` with 2560 dimensions. Local prototype uses DS Lab `gte-base` (`vector(768)`) with the same `DSLAB_API_KEY` as extraction; cache key includes source version, projection version and exact model configuration. A vector dimension change requires a new migration/index and parallel backfill; never mix dimensions/models in similarity comparison.
+Projection builder is deterministic and covered by golden fixtures. It emits `projection_schema_version`, ordered field labels and normalized confirmed text. DS Lab `gte-base` produces `vector(768)` using the same `DSLAB_API_KEY` as extraction; cache key includes source version, projection version and exact model configuration. A model or dimension change requires a reviewed migration/index and parallel backfill; never mix dimensions/models in similarity comparison.
 
 HNSW recall is evaluated against exact cosine on sampled eligible pools. Embedding similarity is a soft feature, not proof of compatibility or a source for sensitive inference.
 
@@ -105,7 +105,7 @@ Hard-filter violation rate must be zero. Measure eligible recall@100 against exa
 
 The rerank quality gate is `rerank-human-pairwise-v1` (separate from `TBD-ML01`). Runtime promotion requires a PII-free passing manifest whose prompt/model/projection versions match config: zero hard-filter/ID-set violations; zero forbidden reasons; valid-result rate ≥95%; LLM wins ≥60% of decisive judgments with 95% Wilson lower bound >50%; ties ≤30%; reviewer κ ≥0.40; p95 latency ≤2.5 s; ≤20 candidates.
 
-`TBD-ML02` cost formula (prototype, YandexGPT Lite): `cost_rub = input_tokens/1000 * rerank_input_price_per_1k_rub + output_tokens/1000 * rerank_output_price_per_1k_rub` with reviewed caps ₽0.50/call and ₽500/day. Default prices in config are ₽0.40/1K input and ₽0.80/1K output. Failed or missing evaluation leaves rerank wired but disabled; production stays heuristic-only.
+`TBD-ML02` cost formula: `cost_rub = input_tokens/1000 * rerank_input_price_per_1k_rub + output_tokens/1000 * rerank_output_price_per_1k_rub` with reviewed caps ₽0.50/call and ₽500/day. Default prices in config are ₽0.40/1K input and ₽0.80/1K output until reconciled with the current DS Lab tariff. Failed or missing evaluation leaves rerank wired but disabled; production stays heuristic-only.
 
 ### Moderation
 

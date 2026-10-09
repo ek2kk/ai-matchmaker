@@ -1,4 +1,4 @@
-# AI Dating
+# AI Matchmaker
 
 Local prototype for a FastAPI API and a React SPA. Production cloud, auth, and domain features are not in this bootstrap.
 
@@ -32,14 +32,14 @@ cd frontend && pnpm install --frozen-lockfile
 
 Postgres can stay up between sessions. Each work session needs three terminals (API, worker, SPA). Relay and ClickHouse are optional.
 
-Fact extraction, embeddings, and photo processing use the local fake/filesystem unless `DSLAB_API_KEY`, `OPENROUTER_API_KEY`, Yandex AI Studio, or S3 credentials are set. Photos are auto-approved only when `APP_ENV=local`.
+DS Lab is the only remote AI provider for fact extraction, embeddings and reranking. Without `DSLAB_API_KEY`, local extraction and embeddings use deterministic fakes. Photo processing uses the local filesystem unless S3-compatible Object Storage credentials are set. Photos are auto-approved only when `APP_ENV=local`.
 
 ```bash
 # 1. API — http://127.0.0.1:8000  (needs DATABASE_URL for anything beyond /healthz)
-cd backend && uv run ai-dating
+cd backend && uv run ai-matchmaker
 
 # 2. Worker — extract, embed, generate, photo jobs
-cd backend && uv run ai-dating-worker
+cd backend && uv run ai-matchmaker-worker
 
 # 3. SPA — http://localhost:5173
 cd frontend && pnpm dev
@@ -48,30 +48,30 @@ cd frontend && pnpm dev
 Optional outbox → ClickHouse:
 
 ```bash
-cd backend && uv run ai-dating-relay
+cd backend && uv run ai-matchmaker-relay
 ```
 
 ClickHouse (optional, Homebrew cask; no `brew services`):
 
 ```bash
 brew install --cask clickhouse
-mkdir -p ~/.local/share/ai-dating-clickhouse
-(cd ~/.local/share/ai-dating-clickhouse && clickhouse server --daemon \
+mkdir -p ~/.local/share/ai-matchmaker-clickhouse
+(cd ~/.local/share/ai-matchmaker-clickhouse && clickhouse server --daemon \
   --log-file="$PWD/clickhouse.log" --errorlog-file="$PWD/clickhouse.err" \
   --pid-file="$PWD/clickhouse.pid")
-cd backend && uv run ai-dating-ch-init
+cd backend && uv run ai-matchmaker-ch-init
 ```
 
 Open the SPA. `/` calls `GET /healthz`. Register at `/register`, sign in at `/login`. Keep me signed in stores the opaque session in `localStorage`; otherwise it lives in `sessionStorage` until the tab closes. CORS allows `http://localhost:5173` and `http://127.0.0.1:5173` only. There is no Vite proxy. The SPA must not send `event_id`, `occurred_at`, actor, or analytics properties. Local-password auth refuses a non-loopback bind.
 
 ## Stop
 
-Ctrl+C in each terminal that is running `ai-dating`, `ai-dating-worker`, `pnpm dev`, or `ai-dating-relay`. Leave Postgres running.
+Ctrl+C in each terminal that is running `ai-matchmaker`, `ai-matchmaker-worker`, `pnpm dev`, or `ai-matchmaker-relay`. Leave Postgres running.
 
 If you started the ClickHouse daemon above:
 
 ```bash
-kill "$(cat ~/.local/share/ai-dating-clickhouse/clickhouse.pid)"
+kill "$(cat ~/.local/share/ai-matchmaker-clickhouse/clickhouse.pid)"
 ```
 
 ## Checks
@@ -80,6 +80,27 @@ kill "$(cat ~/.local/share/ai-dating-clickhouse/clickhouse.pid)"
 cd backend && uv run pytest -q
 cd backend && uv run ruff check . && uv run ruff format --check .
 cd frontend && pnpm lint && pnpm tsc --noEmit && pnpm build
+```
+
+## Container artifact
+
+The same backend image runs API, worker and relay. Migrations stay an explicit
+operator action and are never run by application startup.
+
+```bash
+docker compose build
+docker compose run --rm --no-deps api alembic upgrade head
+docker compose up -d api worker relay
+```
+
+`backend/.env` is local-only. A deployed environment injects the same settings
+from its secret store through `BACKEND_ENV_FILE`; do not bake secrets into the
+image.
+
+Build the separate static frontend artifact with its target API origin:
+
+```bash
+cd frontend && VITE_API_BASE_URL=https://api.<domain> pnpm build
 ```
 
 Alembic (optional; needs `DATABASE_DIRECT_URL` pointing at Postgres):

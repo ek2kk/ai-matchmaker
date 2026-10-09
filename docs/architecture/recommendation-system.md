@@ -47,7 +47,7 @@ The same policy is run again immediately before API delivery. If an item is now 
 
 ### 2.2 Embedding retrieval
 
-The actor's `desired_partner` embedding is compared by cosine distance with candidates' current `self` embeddings. MVP uses GigaChat `EmbeddingsGigaR` (`vector(2560)`); `model_version` and `projection_schema_version` are part of every embedding cache key. HNSW is selected because beta has frequent updates and no trained IVFFlat lists. Query oversamples to 100 candidates, then retains at most 50 after current-version and reciprocal checks.
+The actor's `desired_partner` embedding is compared by cosine distance with candidates' current `self` embeddings. MVP uses DS Lab `gte-base` (`vector(768)`); `model_version` and `projection_schema_version` are part of every embedding cache key. HNSW is selected because beta has frequent updates and no trained IVFFlat lists. Query oversamples to 100 candidates, then retains at most 50 after current-version and reciprocal checks.
 
 Filtered ANN can return too few rows because an HNSW scan may encounter ineligible neighbors. The implementation must measure eligible recall against an exact-search sample. For small pools (<5,000 eligible rows), exact cosine over the eligible set is an acceptable fallback and often simpler. HNSW settings are tuned only from `EXPLAIN` and recall evidence.
 
@@ -97,7 +97,7 @@ sequenceDiagram
     participant API
     participant DB as Postgres
     participant W as Worker
-    participant LLM as Yandex AI Studio
+    participant LLM as DS Lab API
 
     API->>DB: commit onboarding + enqueue dedup job
     W->>DB: claim job with lease

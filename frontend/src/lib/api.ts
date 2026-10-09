@@ -324,6 +324,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ login, password }),
     }).then((session) => remember(session, persist)),
+  loginTelegram: (initData: string) =>
+    request<SessionResponse>("/v1/auth/telegram/sessions", {
+      method: "POST",
+      body: JSON.stringify({ init_data: initData }),
+    }).then((session) => remember(session, false)),
   logout: async () => {
     try {
       await request<void>("/v1/auth/sessions/current", { method: "DELETE" });

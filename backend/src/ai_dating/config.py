@@ -31,19 +31,15 @@ class Settings(BaseSettings):
     outbox_lease_seconds: int = 30
     bind_host: str = "127.0.0.1"
     session_ttl_seconds: int = 86400
-    yandex_ai_base_url: str | None = None
-    yandex_ai_api_key: str | None = None
-    yandex_ai_folder_id: str | None = None
-    yandex_ai_model: str = "yandexgpt-lite/latest"
+    telegram_bot_token: str | None = None
+    telegram_init_data_ttl_seconds: int = 300
+    telegram_admission_open: bool = True
+    telegram_admission_cohort_limit: int = 100
     dslab_api_key: str | None = None
     dslab_model: str = "gemini-2.5-flash-lite"
-    openrouter_api_key: str | None = None
-    openrouter_model: str = "openrouter/free"
     extraction_prompt_version: str = "extract-facts-v4"
     extraction_timeout_seconds: float = 8
     extraction_max_attempts: int = 3
-    embedding_base_url: str | None = None
-    embedding_api_key: str | None = None
     embedding_model: str = "gte-base"
     embedding_timeout_seconds: float = 15
     job_lease_seconds: int = 30
@@ -88,13 +84,8 @@ class Settings(BaseSettings):
         "database_url",
         "database_direct_url",
         "clickhouse_url",
-        "yandex_ai_base_url",
-        "yandex_ai_api_key",
-        "yandex_ai_folder_id",
         "dslab_api_key",
-        "openrouter_api_key",
-        "embedding_base_url",
-        "embedding_api_key",
+        "telegram_bot_token",
         "object_storage_endpoint",
         "object_storage_bucket",
         "object_storage_access_key",
@@ -127,6 +118,10 @@ class Settings(BaseSettings):
     def session_ttl_positive(self) -> Self:
         if self.session_ttl_seconds <= 0:
             raise ValueError("session_ttl_seconds must be positive")
+        if self.telegram_init_data_ttl_seconds <= 0:
+            raise ValueError("telegram_init_data_ttl_seconds must be positive")
+        if self.telegram_admission_cohort_limit < 1:
+            raise ValueError("telegram_admission_cohort_limit must be at least 1")
         if self.extraction_timeout_seconds <= 0:
             raise ValueError("extraction_timeout_seconds must be positive")
         if self.extraction_max_attempts < 1:
@@ -139,6 +134,10 @@ class Settings(BaseSettings):
             raise ValueError("media_auto_approve is allowed only when APP_ENV=local")
         if self.message_auto_approve and self.app_env != "local":
             raise ValueError("message_auto_approve is allowed only when APP_ENV=local")
+        if self.app_env != "local" and not self.dslab_api_key:
+            raise ValueError("DSLAB_API_KEY is required outside local")
+        if self.app_env != "local" and not self.telegram_bot_token:
+            raise ValueError("TELEGRAM_BOT_TOKEN is required outside local")
         if self.message_rate_per_minute < 1:
             raise ValueError("message_rate_per_minute must be at least 1")
         if self.message_rate_per_day < 1:
@@ -165,11 +164,7 @@ class Settings(BaseSettings):
                 RERANK_PROMPT_VERSION,
             )
 
-            model = (
-                f"gpt://{self.yandex_ai_folder_id}/{self.yandex_ai_model}"
-                if self.yandex_ai_folder_id
-                else self.yandex_ai_model
-            )
+            model = self.dslab_model
             if self.rerank_prompt_version != RERANK_PROMPT_VERSION:
                 raise ValueError("rerank_prompt_version does not match code")
             if self.rerank_projection_version != RERANK_PROJECTION_VERSION:

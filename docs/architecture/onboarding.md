@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart LR
-    A[Local login + password / beta SMS OTP] --> B[Age and consent]
+    A[Local password / beta Telegram login] --> B[Age and consent]
     B --> C[Self basics]
     C --> D[Desired partner]
     D --> E[Photo and prompt]
@@ -18,7 +18,7 @@ flowchart LR
 
 | Step | Target time | Required input | Boundary behavior |
 |---|---:|---|---|
-| Authentication | 30–60 s | Local `login + password` in prototype; SMS OTP in beta | Local auth refuses non-local loopback; see [authentication design](../authentication/design.md) |
+| Authentication | 10–30 s | Local `login + password` in prototype; verified Telegram Mini App launch in beta | Local auth refuses non-local loopback; see [authentication design](../authentication/design.md) |
 | Eligibility + consent | 20–30 s | DOB, terms/privacy, AI matching consent, 21+ assertion | Beta additionally enforces 21–35; fail closed if age/consent missing |
 | Self basics | 45–60 s | display name, gender, orientation, `search_mode`, dating-only relationship goal, city and coarse area | Beta is `dating` only; coarse area is restricted and never shown to candidates |
 | Desired partner | 45–60 s | accepted genders, age range, dating-only accepted goals, city | Beta uses Moscow city equality; distance UI/filter remains disabled until a separate location policy |
@@ -65,7 +65,7 @@ sequenceDiagram
     participant API
     participant DB as Postgres
     participant W as Worker
-    participant AI as Yandex AI Studio
+    participant AI as DS Lab API
 
     U->>API: Save free-text answer
     API->>DB: answer + extraction job

@@ -13,7 +13,6 @@ from ai_dating.config import Settings
 log = structlog.get_logger("ai_dating.ai")
 
 DSLAB_BASE_URL = "https://api.dslab.tech/v1"
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 SYSTEM_PROMPT = (
     "You extract only facts the user explicitly stated for dating matching. "
@@ -47,13 +46,7 @@ class ProviderError(Exception):
 
 
 def extraction_model_version(settings: Settings) -> str:
-    if settings.dslab_api_key:
-        return settings.dslab_model
-    if settings.openrouter_api_key:
-        return settings.openrouter_model
-    if settings.yandex_ai_folder_id:
-        return f"gpt://{settings.yandex_ai_folder_id}/{settings.yandex_ai_model}"
-    return settings.yandex_ai_model
+    return settings.dslab_model
 
 
 def _payload_from_content(content: object) -> object:
@@ -74,28 +67,12 @@ def _payload_from_content(content: object) -> object:
 def extract_chat_completion(
     settings: Settings, prompt_code: str, answer_text: str
 ) -> ProviderResult:
-    if settings.dslab_api_key:
-        base_url = DSLAB_BASE_URL
-        api_key = settings.dslab_api_key
-        extra_headers = {}
-    elif settings.openrouter_api_key:
-        base_url = OPENROUTER_BASE_URL
-        api_key = settings.openrouter_api_key
-        extra_headers = {
-            "HTTP-Referer": "http://127.0.0.1:8000",
-            "X-Title": "ai-dating-local",
-        }
-    elif settings.yandex_ai_base_url and settings.yandex_ai_api_key:
-        base_url = settings.yandex_ai_base_url
-        api_key = settings.yandex_ai_api_key
-        extra_headers = {}
-    else:
+    if not settings.dslab_api_key:
         raise ProviderError("provider_unconfigured")
-    url = base_url.rstrip("/") + "/chat/completions"
+    url = DSLAB_BASE_URL + "/chat/completions"
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {settings.dslab_api_key}",
         "Content-Type": "application/json",
-        **extra_headers,
     }
     body = {
         "model": extraction_model_version(settings),
@@ -112,12 +89,9 @@ def extract_chat_completion(
             },
         ],
     }
-    timeout = settings.extraction_timeout_seconds
-    if settings.openrouter_api_key and not settings.dslab_api_key:
-        timeout = max(timeout, 90)
     started = time.perf_counter()
     try:
-        with httpx.Client(timeout=timeout) as client:
+        with httpx.Client(timeout=settings.extraction_timeout_seconds) as client:
             response = client.post(url, headers=headers, json=body)
     except httpx.HTTPError as exc:
         log.info("extraction_provider_error", error_code="provider_error")
@@ -148,28 +122,18 @@ def extract_chat_completion(
     )
 
 
-def embedding_credentials(settings: Settings) -> tuple[str, str] | None:
-    if settings.embedding_api_key and settings.embedding_base_url:
-        return settings.embedding_base_url, settings.embedding_api_key
-    if settings.dslab_api_key:
-        return DSLAB_BASE_URL, settings.dslab_api_key
-    return None
-
-
 def embedding_model_version(settings: Settings) -> str:
-    if embedding_credentials(settings) is not None:
+    if settings.dslab_api_key:
         return settings.embedding_model
     return f"local-fake-{EMBED_DIM}"
 
 
 def embed_text(settings: Settings, text: str) -> ProviderResult:
-    creds = embedding_credentials(settings)
-    if creds is None:
+    if not settings.dslab_api_key:
         raise ProviderError("provider_unconfigured")
-    base_url, api_key = creds
-    url = base_url.rstrip("/") + "/embeddings"
+    url = DSLAB_BASE_URL + "/embeddings"
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {settings.dslab_api_key}",
         "Content-Type": "application/json",
     }
     body = {"model": settings.embedding_model, "input": text}
@@ -207,13 +171,11 @@ def embed_text(settings: Settings, text: str) -> ProviderResult:
     )
 
 
-def yandex_model_version(settings: Settings) -> str:
-    if settings.yandex_ai_folder_id:
-        return f"gpt://{settings.yandex_ai_folder_id}/{settings.yandex_ai_model}"
-    return settings.yandex_ai_model
+def rerank_model_version(settings: Settings) -> str:
+    return settings.dslab_model
 
 
-def yandex_chat_completion(
+def rerank_chat_completion(
     settings: Settings,
     *,
     system: str,
@@ -221,15 +183,15 @@ def yandex_chat_completion(
     timeout: float,
     max_tokens: int,
 ) -> ProviderResult:
-    if not settings.yandex_ai_base_url or not settings.yandex_ai_api_key:
+    if not settings.dslab_api_key:
         raise ProviderError("provider_unconfigured")
-    url = settings.yandex_ai_base_url.rstrip("/") + "/chat/completions"
+    url = DSLAB_BASE_URL + "/chat/completions"
     headers = {
-        "Authorization": f"Bearer {settings.yandex_ai_api_key}",
+        "Authorization": f"Bearer {settings.dslab_api_key}",
         "Content-Type": "application/json",
     }
     body = {
-        "model": yandex_model_version(settings),
+        "model": rerank_model_version(settings),
         "temperature": 0,
         "max_tokens": max_tokens,
         "response_format": {"type": "json_object"},

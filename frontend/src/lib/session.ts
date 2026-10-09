@@ -1,4 +1,4 @@
-const KEY = "ai-dating.session";
+const KEY = "ai-matchmaker.session";
 
 type StoredSession = {
   token: string;

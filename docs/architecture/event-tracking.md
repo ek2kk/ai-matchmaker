@@ -55,7 +55,7 @@ These are canonical product events under the same envelope/schema/delivery rules
 
 | Event | Owner / producer | Moment | Required properties | Identity / idempotency |
 |---|---|---|---|---|
-| `onboarding_started` | auth / API | First local registration or verified beta SMS OTP creates application account | `flow_version`, `auth_mode` | actor only; once per account/flow version |
+| `onboarding_started` | auth / API | First local registration or admitted Telegram identity creates application account | `flow_version`, `auth_mode` | actor only; once per account/flow version |
 | `onboarding_step_completed` | onboarding / API | A named user-controlled step first satisfies its server validation | `flow_version`, allowlisted `step_code`, `profile_version`, `preferences_version` | actor only; once per account/flow/step; later edits do not fake another completion |
 | `fact_reviewed` | profiles / API | Accept/edit/reject decision and fact version commit | `fact_id`, `fact_category`, `decision`, `source_type`, `extractor_version` nullable | actor only; one event per committed fact review version. Event `source_type` is `extracted` when the reviewed row is `free_text`, otherwise `user_entered`. `extractor_version` is the prompt version for extracted rows |
 | `calibration_completed` | onboarding / API | Synthetic calibration completes or is explicitly skipped | `calibration_version`, `items_seen`, `skipped`, `synthetic_only` | actor only; stable completion action ID. Idempotent retry of the same complete/skip does not enqueue a second event |

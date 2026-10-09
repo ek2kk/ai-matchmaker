@@ -5,7 +5,7 @@
 
 ## 1. Ownership and data classes
 
-For local prototype, the application auth module owns local-password identities, password hashes and revocable sessions in Postgres; phone/Yandex identity is Later. `accounts.account_id` is an application UUID and never comes from the client or an external provider. Postgres is authoritative for domain state. Object storage owns media bytes. `profile_embeddings`, unconfirmed AI facts, scores and analytical marts are derived.
+For local prototype, the application auth module owns local-password identities, password hashes and revocable sessions in Postgres; closed beta adds verified Telegram identities and reuses the same sessions. `accounts.account_id` is an application UUID and never comes from the client or an external provider. Postgres is authoritative for domain state. Object storage owns media bytes. `profile_embeddings`, unconfirmed AI facts, scores and analytical marts are derived.
 
 | Class | Examples | Controls |
 |---|---|---|
@@ -72,11 +72,11 @@ erDiagram
 
 Queries: load current actor; active cutoff scan; deletion queue.
 
-For local prototype, one transaction creates account, `local_password` identity, password credential and revocable session. Deletion revokes sessions first and erases domain data before deleting auth identities; credentials never own domain lifecycle. Phone/Yandex proof is Later.
+For local prototype, one transaction creates account, `local_password` identity, password credential and revocable session. Closed-beta admission creates a `telegram` identity from verified Mini App launch data. Deletion revokes sessions first and erases domain data before deleting auth identities; credentials never own domain lifecycle.
 
 ### Authentication tables
 
-Полный contract находится в [authentication design](../authentication/design.md). `auth_identities` связывает уникальный `(provider, provider_subject)` с account; единственный current provider `local_password` хранит normalised login. `auth_password_credentials` хранит Argon2id hash, а `auth_sessions` только token hash, expiry и revocation. `auth_challenges`, `auth_login_policies` и `auth_invites` не создаются в local prototype.
+Полный contract находится в [authentication design](../authentication/design.md). `auth_identities` связывает уникальный `(provider, provider_subject)` с account; local provider `local_password` хранит normalised login, beta provider — decimal Telegram user ID. `auth_password_credentials` хранит Argon2id hash, а `auth_sessions` только token hash, expiry и revocation. `auth_invites` не создаётся в local prototype; beta хранит `token_hash`, `expires_at`, `used_at` и `admitted_account_id`, поэтому plaintext invite нельзя извлечь из БД.
 
 Invariant: local password auth не запускается вне local loopback; plaintext password не хранится и не попадает в logs/events.
 
@@ -202,10 +202,10 @@ Queries: pending review; current confirmed facts; model evaluation by version. A
 | `kind` | `text` | not null | check `self, desired_partner` |
 | `source_version` | `integer` | not null | profile/preferences version snapshot |
 | `model_version` | `text` | not null | exact provider/model/config key |
-| `embedding` | `vector(768)` local / `vector(2560)` production | not null | cosine retrieval; local `gte-base`, production `EmbeddingsGigaR` |
+| `embedding` | `vector(768)` | not null | cosine retrieval; DS Lab `gte-base` |
 | `created_at` | `timestamptz` | now | unique `(profile_id, kind, source_version, model_version)` |
 
-**Decision:** production retrieval uses GigaChat `EmbeddingsGigaR` (`vector(2560)`). Local prototype stores DS Lab `gte-base` (`vector(768)`) because that is the cheapest catalog model on the same `DSLAB_API_KEY`. The exact provider model ID is stored in `model_version`. A dimension change requires a new column/table migration and parallel backfill; vectors of different model/dimension are never mixed in one index.
+**Decision:** retrieval uses DS Lab `gte-base` (`vector(768)`) with the same `DSLAB_API_KEY` as extraction and reranking. The exact model ID is stored in `model_version`. A model or dimension change requires a new column/table migration and parallel backfill; vectors of different model/dimension are never mixed in one index.
 
 ## 4. Onboarding and calibration state
 

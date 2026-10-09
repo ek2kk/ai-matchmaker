@@ -7,7 +7,7 @@ Read this file first, then the nearest `AGENTS.md` and [docs/client-brief.md](do
 - `backend/`: FastAPI app at `src/ai_dating` with `/healthz`, `/readyz`, typed config, SQLAlchemy/Alembic, transactional outbox and ClickHouse relay. Lockfile: `backend/uv.lock`.
 - `frontend/`: Vite/React/TypeScript SPA; lockfile `frontend/pnpm-lock.yaml`. Status page calls `GET /healthz`. Local register/login hold an opaque session; Keep me signed in stores it in `localStorage`, otherwise `sessionStorage`.
 - `docs/`: proposed product and architecture contracts. No CI or cloud deployment config yet.
-- Target stack is FastAPI, React/Vite/TypeScript and Yandex Cloud: Managed PostgreSQL with pgvector/PostGIS, Object Storage, AI Studio and one Compute VM for the modular backend processes. Yandex AI Studio is the generation provider; GigaChat `EmbeddingsGigaR` is the retrieval embedding provider. Local prototype authentication is application-owned `login + password` with DB-backed sessions; phone OTP/call-code and Yandex ID are Later, before closed beta. Treat this as a design constraint, not evidence of deployed infrastructure.
+- Target stack is FastAPI, React/Vite/TypeScript and Yandex Cloud: Managed PostgreSQL with pgvector/PostGIS, Object Storage and one Compute VM for the modular backend processes. DS Lab is the only remote provider for extraction, embeddings and bounded reranking. Local prototype authentication is application-owned `login + password`; closed beta uses verified Telegram Mini App launch data, invite-only admission and DB-backed sessions. Treat this as a design constraint, not evidence of deployed infrastructure.
 
 ## Commands
 
@@ -17,10 +17,10 @@ See [README.md](README.md) for the full local sequence. Do not invent extra inst
 cd backend && uv sync --dev
 cd backend && uv run pytest -q
 cd backend && uv run ruff check . && uv run ruff format --check .
-cd backend && uv run ai-dating
+cd backend && uv run ai-matchmaker
 cd backend && uv run alembic upgrade head   # requires DATABASE_DIRECT_URL
-cd backend && uv run ai-dating-relay        # requires Postgres + ClickHouse
-cd backend && uv run ai-dating-worker       # requires Postgres; Yandex AI Studio opt-in
+cd backend && uv run ai-matchmaker-relay    # requires Postgres + ClickHouse
+cd backend && uv run ai-matchmaker-worker   # requires Postgres; DS Lab opt-in locally
 cd frontend && pnpm install --frozen-lockfile
 cd frontend && pnpm lint && pnpm tsc --noEmit && pnpm build
 cd frontend && pnpm dev
@@ -35,7 +35,7 @@ CI is `TBD-INF03`; no workflow files exist.
 - Enforce reciprocal eligibility, block, visibility and moderation before ranking and again before delivery. LLM/embeddings cannot override hard filters.
 - Follow the canonical API, event envelope and IDs in `docs/architecture`. Do not emit analytics by dual-write; domain transaction writes the outbox.
 - Never expose precise location, DOB, private facts, blocks/reports, moderation signals, model prompts/scores or service credentials to clients.
-- Local-password auth must refuse non-local environment or non-loopback binding under `docs/authentication/design.md`. Future SMS exemptions must never become an authentication bypass.
+- Local-password auth must refuse non-local environment or non-loopback binding under `docs/authentication/design.md`. Telegram launch data must be verified server-side before issuing an application session.
 - No social scraping/import or agent action on a user's behalf without a separately approved consent design.
 
 ## Changes

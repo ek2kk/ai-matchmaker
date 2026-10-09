@@ -1,15 +1,15 @@
-# AI Dating MVP: architecture overview
+# AI Matchmaker MVP: architecture overview
 
 > **Status:** Local prototype implemented; closed-beta target under preparation
-> **Owner:** founder (prototype); beta ownership to be confirmed
-> **Updated:** 2026-08-25  
+> **Owner:** founder — единственный product, platform, CI/CD, Trust & Safety и incident-response owner
+> **Updated:** 2026-09-02
 > **Scope:** implemented local prototype and target architecture for a future closed beta; production infrastructure is not deployed.
 
 ## 1. Abstract
 
 Репозиторий содержит работающий local FastAPI/React prototype, Alembic migrations, DB-backed worker и outbox relay. Target stack зафиксирован как FastAPI, React/Vite и Yandex Cloud; CI и cloud deployment config ещё отсутствуют. Эти документы описывают текущие verified local contracts и proposed closed-beta target, а не доказательство развернутой production infrastructure.
 
-Рекомендуемый beta target: modular monolith с одним FastAPI codebase, React SPA, Yandex Managed PostgreSQL как transactional source of truth, Object Storage для photos, DB-backed worker для recommendation и moderation jobs, Yandex AI Studio для extraction/bounded reranking и GigaChat `EmbeddingsGigaR` для retrieval. Local prototype использует application-owned `login + password` и revocable DB sessions; beta требует отдельный SMS OTP flow. Product events надёжно выходят через transactional outbox прямо в ClickHouse; Kafka добавляется только при измеримом fan-out или throughput.
+Рекомендуемый beta target: modular monolith с одним FastAPI codebase, React SPA inside Telegram, Yandex Managed PostgreSQL как transactional source of truth, Object Storage для photos, DB-backed worker для recommendation и moderation jobs и DS Lab API как единственный remote provider для extraction, embeddings и bounded reranking. Local prototype использует application-owned `login + password`; beta проверяет Telegram Mini App launch data и выдаёт revocable DB sessions. Product events надёжно выходят через transactional outbox прямо в ClickHouse; Kafka добавляется только при измеримом fan-out или throughput.
 
 ## 2. Goals and non-goals
 
@@ -37,7 +37,7 @@
 | [api.md](api.md) | Client-facing contracts and errors |
 | [deployment.md](deployment.md) | Environments, jobs, observability, recovery |
 | [roadmap.md](roadmap.md) | Staged delivery and revisit triggers |
-| [../authentication/design.md](../authentication/design.md) | Local login/password, sessions и запрет non-local запуска |
+| [../authentication/design.md](../authentication/design.md) | Local login/password, Telegram beta identity и DB-backed sessions |
 
 ## 4. System context
 
@@ -45,14 +45,14 @@
 flowchart LR
     U[Adult user] --> SPA[React SPA]
     OPS[Trust and Safety operator] --> OPSUI[Restricted admin UI]
-    SPA -->|prototype local password / beta SMS OTP| API[FastAPI modular monolith]
+    SPA -->|local password / verified Telegram launch| API[FastAPI modular monolith]
     OPSUI -->|staff identity| API
     API -->|authoritative writes| PG[(Yandex Managed PostgreSQL)]
     API -->|signed upload URLs| OBJ[(Object storage)]
     SPA -->|signed photo upload| OBJ
     WORKER[DB-backed worker] --> PG
     WORKER --> OBJ
-    WORKER --> OAI[Yandex AI Studio]
+    WORKER --> DS[DS Lab API]
     RELAY[Outbox relay] --> PG
     RELAY --> CH[(ClickHouse analytics)]
     API --> OBS[Logs metrics traces]
@@ -70,9 +70,9 @@ sequenceDiagram
     participant A as FastAPI
     participant D as Postgres
     participant W as Worker
-    participant M as Yandex AI Studio
+    participant M as DS Lab API
 
-    C->>A: prototype local login/password or beta SMS OTP
+    C->>A: local login/password or verified Telegram launch data
     A->>D: create identity, account and revocable session
     C->>A: PATCH /v1/onboarding/profile
     A->>D: transaction: profile + outbox
@@ -100,8 +100,7 @@ sequenceDiagram
 | Postgres | Authoritative accounts, profiles, actions, matches, messages, audit/outbox | Photo binaries, analytical marts | No downstream side effect before commit |
 | Object storage | Original photos and moderated derivatives | Profile truth or public visibility decision | Photo remains non-public until approved derivative exists |
 | DB-backed worker | Extraction, embeddings, recommendation jobs, moderation calls | HTTP auth boundary | Lease + retry; idempotent commit by job/dedup key |
-| Yandex AI Studio | Bounded extraction and reranking | Final eligibility, consent, enforcement | Timeouts and circuit breaker; local fallback |
-| GigaChat `EmbeddingsGigaR` | 2560-dimensional retrieval embeddings | Final eligibility, consent, enforcement | Exact eligible SQL + heuristic |
+| DS Lab API | Extraction, 768-dimensional embeddings and bounded reranking | Final eligibility, consent, enforcement | Deterministic local fake, manual facts, exact eligible SQL + heuristic |
 | Outbox relay | At-least-once delivery to analytics | Domain state mutation | Retries with backoff; dedup by `event_id` |
 | ClickHouse | Product event log and analytical marts | Transactional truth, security enforcement | Analytics may lag; user write path remains available |
 
@@ -169,10 +168,10 @@ sequenceDiagram
 
 - **Decision:** Yandex Cloud is the target production data plane; no deployed resources were found.
 - **Decision:** Yandex Managed PostgreSQL supports `pgvector` and PostGIS. Exact extension versions and index behavior are verified in a disposable cluster before migrations are finalized.
-- **Decision:** founder owns product, platform, CI/CD, Trust & Safety and incident response for prototype.
+- **Decision:** founder is the sole product, platform, CI/CD, Trust & Safety and incident-response owner for prototype and closed beta. There is no backup owner; public launch requires one.
 - **Decision:** target segment, taxonomy and location semantics are fixed in [client brief](../client-brief.md).
-- **Decision:** GigaChat `EmbeddingsGigaR` provides `vector(2560)` retrieval embeddings; Yandex AI Studio remains the generation provider.
-- **Closed-beta gate:** jurisdiction-specific retention, employee access/encryption posture, safety SLA/backup owner, production SMS OTP/provider, model/auth budgets and restore proof remain unresolved. They do not block local prototype work.
+- **Decision:** DS Lab is the only remote AI provider; `gemini-2.5-flash-lite` handles extraction/reranking and `gte-base` provides `vector(768)` retrieval embeddings.
+- **Closed-beta gate:** legal review must approve the Russian legal basis and retention of reports/audit/evidence; Terms/Privacy, employee access/encryption posture, model/auth budgets and restore proof remain launch gates. Telegram admission is decided. The sole founder must be reachable for severe incidents: immediate kill switch, acknowledgement within 30 minutes and containment within 2 hours; public launch requires a backup owner.
 
 ## 12. Decision and next step
 

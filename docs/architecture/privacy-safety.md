@@ -76,11 +76,11 @@ Object upload validates MIME by content, size, dimensions and object key ownersh
 
 ## 7. Employee and operator access
 
-Separate staff identity, least-privilege roles and MFA are required. No direct production database browsing for routine support. Admin UI exposes minimum case data; profile/message/report access needs case/ticket reason and writes `security_audit_log`. Break-glass access expires, alerts security and is reviewed. Service credentials live in managed secret stores, never repository, frontend env or logs. No case-view or resolve HTTP endpoint ships until that staff identity/MFA model is approved; reports still open restricted pending cases.
+Founder is the sole beta operator; there is no backup owner. A separate staff identity with MFA and least-privilege roles is still required: founder must not use routine production DB browsing. Restricted profile/message/report access requires a case reason and writes `security_audit_log`; break-glass access expires and is reviewed. Service credentials live in managed secret stores, never repository, frontend env or logs. Before every beta invite, founder confirms availability for severe incidents: immediately enable the relevant kill switch, acknowledge within 30 minutes and contain within 2 hours. Public launch is blocked until a backup owner exists.
 
 ## 8. Retention, export and deletion
 
-Proposed conservative defaults pending legal review:
+Approved technical defaults; legal review still determines the basis and retention of reports, audit and evidence:
 
 | Data | Default | Deletion behavior |
 |---|---:|---|
@@ -89,7 +89,7 @@ Proposed conservative defaults pending legal review:
 | Delivered outbox rows | 7 days | Purge after verified sink delivery |
 | Product raw events | 13 months | Delete/anonymize account identifiers on valid request |
 | Model raw sampled payload | Off by default; ≤30 days if approved | Expiring restricted store |
-| Reports/audit/evidence | `TBD-SEC01` | Case/legal basis specific; access remains restricted |
+| Reports/audit/evidence | Legal-review decision required | Case/legal basis specific; access remains restricted and does not restore a deleted profile |
 | Media objects/derivatives | Account/photo lifetime | Queue erase, verify object deletion and CDN expiry |
 
 Export is an authenticated asynchronous job producing a short-lived encrypted archive of user-authored/profile, consent, match/message and action data where applicable. It excludes other users' private data and internal safety signals. Deletion is idempotent, auditable and retries partial media/provider/analytics erasure until terminal success.
@@ -108,7 +108,7 @@ Export is an authenticated asynchronous job producing a short-lived encrypted ar
 
 ## 10. Audit and proof
 
-Security tests cover cross-account IDOR, block symmetry, stale batch delivery, conversation membership, signed upload ownership, consent withdrawal and deletion retries. Quarterly access review and restore/delete drills are **proposed**; cadence/owner is `TBD-OPS01`. Severe safety incident response, notification and escalation runbook must exist before closed beta invites.
+Security tests cover cross-account IDOR, block symmetry, stale batch delivery, conversation membership, signed upload ownership, consent withdrawal and deletion retries. Founder performs and records an access review and restore/delete drill before closed beta; a severe incident runbook must include the configured kill switches, 30-minute acknowledgement and two-hour containment target.
 
 ## 11. Later boundaries
 

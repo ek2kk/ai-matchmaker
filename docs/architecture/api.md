@@ -34,9 +34,10 @@ Detailed invariants are defined in [authentication design](../authentication/des
 |---|---|---|
 | `POST /v1/auth/local/register` | Public, local-only + idempotency | `{login,password}`; creates a test account and returns `{account_id,session_token,expires_at}`. Duplicate login returns `409 login_unavailable`. |
 | `POST /v1/auth/local/sessions` | Public, local-only + idempotency | `{login,password}`; returns a fresh opaque session or generic `401 invalid_credentials`. |
+| `POST /v1/auth/telegram/sessions` | Public in beta + idempotency | `{init_data}`; verifies Telegram signature/freshness and invite admission for a new identity, then returns `{account_id,session_token,expires_at}`. |
 | `DELETE /v1/auth/sessions/current` | Authenticated + idempotency | Revokes current session and returns `204`. |
 
-`local_password` mode is refused outside local loopback. Beta adds `POST /v1/auth/phone/challenges` and `POST /v1/auth/phone/challenges/{id}/verify` after the SMS-provider, rate-limit and invite-only admission task is complete. One verified number maps to one active account; the challenge has a short TTL, bounded verification attempts and cooldown. Yandex ID is not a beta dependency.
+`local_password` mode is refused outside local loopback. Beta accepts only verified Telegram Mini App `initData` no older than five minutes; one Telegram user ID maps to one active account. A new identity additionally requires a valid one-time 32-byte random invite from `start_param`; only its `SHA-256` hash is stored, so a separate signature is unnecessary. Existing identities can start a new 24-hour revocable application session without another invite. A global admission stop affects new accounts only.
 
 ## 3. Onboarding, profile and preferences
 

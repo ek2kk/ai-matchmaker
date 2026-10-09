@@ -1,6 +1,6 @@
 # Frontend — agent notes
 
-This is the React SPA for AI Dating. Read [../AGENTS.md](../AGENTS.md) first — universal building rules live there. This file adds frontend-specific conventions.
+This is the React SPA for AI Matchmaker. Read [../AGENTS.md](../AGENTS.md) first — universal building rules live there. This file adds frontend-specific conventions.
 
 The SPA is bootstrapped. Commands: `pnpm install --frozen-lockfile`, `pnpm dev`, `pnpm lint`, `pnpm tsc --noEmit`, `pnpm build`. Lockfile: `pnpm-lock.yaml`. `.npmrc` sets `minimum-release-age=10080`; `pnpm-workspace.yaml` repeats that as `minimumReleaseAge` (pnpm 11) and allowlists the `esbuild` build script.
 
@@ -10,7 +10,7 @@ The SPA is bootstrapped. Commands: `pnpm install --frozen-lockfile`, `pnpm dev`,
 - **Tailwind CSS** for styling. No CSS modules, styled-components, Emotion, or `.module.css` files for component styles. Global theme tokens live in `src/index.css`.
 - **shadcn/ui** for UI primitives. Add components with `pnpm dlx shadcn@latest add <name>` — don't hand-roll what shadcn already ships.
 - **React Router** for routing.
-- Local prototype auth uses backend login/password/session endpoints. Phone OTP/call-code and Yandex ID are Later; no Supabase client is used.
+- Local prototype auth uses backend login/password/session endpoints. Closed beta uses Telegram Mini App launch data and backend sessions; no Supabase client is used.
 
 ## Package manager
 

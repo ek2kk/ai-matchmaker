@@ -22,6 +22,8 @@ def test_production_has_no_local_auth_routes():
         release_id="rel-1",
         database_url="postgresql://u@127.0.0.1:5432/db",
         database_direct_url="postgresql://u@127.0.0.1:5432/db",
+        dslab_api_key="test",
+        telegram_bot_token="test",
         media_auto_approve=False,
         message_auto_approve=False,
     )

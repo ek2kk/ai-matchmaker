@@ -37,6 +37,8 @@ def test_require_startup_production_missing_db():
         release_id="rel-1",
         database_url=None,
         database_direct_url=None,
+        dslab_api_key="test",
+        telegram_bot_token="test",
         media_auto_approve=False,
         message_auto_approve=False,
     )
@@ -46,6 +48,27 @@ def test_require_startup_production_missing_db():
 
 def test_require_startup_local_without_db():
     require_startup(Settings(_env_file=None))
+
+
+def test_production_requires_dslab():
+    with pytest.raises(ValidationError, match="DSLAB_API_KEY"):
+        Settings(
+            _env_file=None,
+            app_env="production",
+            media_auto_approve=False,
+            message_auto_approve=False,
+        )
+
+
+def test_production_requires_telegram_bot_token():
+    with pytest.raises(ValidationError, match="TELEGRAM_BOT_TOKEN"):
+        Settings(
+            _env_file=None,
+            app_env="production",
+            dslab_api_key="test",
+            media_auto_approve=False,
+            message_auto_approve=False,
+        )
 
 
 def test_rerank_enabled_requires_passing_manifest():

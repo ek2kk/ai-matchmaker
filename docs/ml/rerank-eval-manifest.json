@@ -4,7 +4,7 @@
   "dataset_hash": "aa65da6012a6e7b430bb26a7bec77236a8af4c75280e492b1b76c4c999983eca",
   "prompt_version": "rerank-v1",
   "projection_version": "rerank-proj-v1",
-  "model_version": "yandexgpt-lite/latest",
+  "model_version": "gemini-2.5-flash-lite",
   "thresholds": {
     "valid_result_rate": 0.95,
     "llm_win_rate": 0.6,

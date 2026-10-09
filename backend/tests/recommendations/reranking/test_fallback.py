@@ -52,7 +52,7 @@ def test_provider_failure_keeps_heuristic_order(db: Session, monkeypatch):
     def boom(*_args, **_kwargs):
         raise ProviderError("timeout")
 
-    monkeypatch.setattr("ai_dating.ai.client.yandex_chat_completion", boom)
+    monkeypatch.setattr("ai_dating.ai.client.rerank_chat_completion", boom)
 
     class Job:
         job_id = uuid4()
@@ -85,7 +85,7 @@ def test_malformed_payload_falls_back(db: Session, monkeypatch):
     ]
     ids = [row[0].account_id for row in people]
     monkeypatch.setattr(
-        "ai_dating.ai.client.yandex_chat_completion",
+        "ai_dating.ai.client.rerank_chat_completion",
         lambda *_a, **_k: ProviderResult(
             payload={"order": ["nope"]}, latency_ms=5, token_input=10, token_output=2
         ),

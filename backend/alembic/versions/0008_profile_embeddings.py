@@ -62,8 +62,7 @@ def upgrade() -> None:
         "profile_embeddings",
         ["profile_id", "kind"],
     )
-    # ponytail: pgvector HNSW rejects >2000 dims; EmbeddingsGigaR is 2560.
-    # Retrieval in task 8 uses exact cosine or halfvec until the index limit moves.
+    # Retrieval in task 8 uses exact cosine until the 768-d migration adds HNSW.
 
 
 def downgrade() -> None:

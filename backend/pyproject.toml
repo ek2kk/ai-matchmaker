@@ -1,7 +1,7 @@
 [project]
-name = "ai-dating"
+name = "ai-matchmaker"
 version = "0.1.0"
-description = "AI Dating API"
+description = "AI Matchmaker API"
 authors = [
     { name = "Egor Kuznetsov", email = "ek2kkk@yandex.ru" }
 ]
@@ -23,16 +23,20 @@ dependencies = [
 ]
 
 [project.scripts]
-ai-dating = "ai_dating:main"
-ai-dating-relay = "ai_dating.relay:main"
-ai-dating-replay = "ai_dating.replay:main"
-ai-dating-ch-init = "ai_dating.ch_init:main"
-ai-dating-worker = "ai_dating.worker:main"
-ai-dating-rerank-eval = "ai_dating.ai.eval:main"
+ai-matchmaker = "ai_dating:main"
+ai-matchmaker-relay = "ai_dating.relay:main"
+ai-matchmaker-replay = "ai_dating.replay:main"
+ai-matchmaker-ch-init = "ai_dating.ch_init:main"
+ai-matchmaker-worker = "ai_dating.worker:main"
+ai-matchmaker-rerank-eval = "ai_dating.ai.eval:main"
+ai-matchmaker-invite = "ai_dating.auth.invites:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "ai_dating"
 
 [dependency-groups]
 dev = [
